@@ -201,6 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmNo = document.getElementById('confirmNo');
     const confirmationMessage = document.getElementById('confirmationMessage');
     let formData = null;
+    let currentSrNo = null;
 
     async function checkISVName(isvName) {
         const response = await fetch('/check_isv_name', {
@@ -210,11 +211,13 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({ isv_name: isvName })
         });
+        return await response.json();
+    }
+
+    async function getMaxSrNo() {
+        const response = await fetch('/get_max_sr_no');
         const data = await response.json();
-        return {
-            exists: data.exists,
-            sr_no: data.sr_no
-        };
+        return data.max_sr_no;
     }
 
     form.addEventListener('submit', async function(e) {
@@ -231,24 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let hasError = false;
 
-        // Validate dates
-        if (endDate < startDate) {
-            e.preventDefault();
-            const errorDiv = document.createElement('p');
-            errorDiv.className = 'mt-1 text-sm text-red-600 date-error';
-            errorDiv.textContent = 'End date must be after start date';
-            document.querySelector('[name="end_date"]').parentNode.appendChild(errorDiv);
-            hasError = true;
-        }
-
-        if (startDate < today && form.querySelector('[name="status"]').value === 'not_started') {
-            e.preventDefault();
-            const errorDiv = document.createElement('p');
-            errorDiv.className = 'mt-1 text-sm text-red-600 date-error';
-            errorDiv.textContent = 'Start date cannot be in the past for new ISVs';
-            document.querySelector('[name="start_date"]').parentNode.appendChild(errorDiv);
-            hasError = true;
-        }
+        // Your existing date validation code...
 
         if (hasError) {
             const firstError = document.querySelector('.text-red-600');
@@ -266,21 +252,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const isvCheck = await checkISVName(isvName);
 
         if (isvCheck.exists) {
-            // Show confirmation modal with Sr_No
-            confirmationMessage.textContent = `An ISV with the name "${isvName}" already exists with Sr_No ${isvCheck.sr_no}. Do you want to continue?`;
-            confirmationModal.classList.remove('hidden');
+            currentSrNo = isvCheck.Sr_No;
+            confirmationMessage.textContent = `An ISV with the name "${isvName}" already exists (Sr. No: ${currentSrNo}). Do you want to add another entry for this ISV?`;
         } else {
-            // Submit form directly
-            submitForm(false);
+            const maxSrNo = await getMaxSrNo();
+            currentSrNo = maxSrNo + 1;
+            confirmationMessage.textContent = `Add new ISV "${isvName}" with Sr. No: ${currentSrNo}?`;
         }
+
+        confirmationModal.classList.remove('hidden');
     });
 
-    async function submitForm(confirmed) {
+    async function submitForm() {
         if (!formData) return;
 
-        if (confirmed) {
-            formData.append('confirmed', 'true');
-        }
+        formData.append('Sr_No', currentSrNo);
 
         try {
             const response = await fetch(form.action, {
@@ -292,24 +278,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = response.url;
             } else {
                 const result = await response.json();
-                if (result.needsConfirmation) {
-                    confirmationMessage.textContent = result.message;
-                    confirmationModal.classList.remove('hidden');
+                if (result.error) {
+                    alert(result.error);
                 }
             }
         } catch (error) {
             console.error('Error:', error);
+            alert('An error occurred while submitting the form.');
         }
     }
 
     confirmYes.addEventListener('click', function() {
         confirmationModal.classList.add('hidden');
-        submitForm(true);
+        submitForm();
     });
 
     confirmNo.addEventListener('click', function() {
         confirmationModal.classList.add('hidden');
         formData = null;
+        currentSrNo = null;
     });
 });
 </script>

@@ -53,27 +53,33 @@ def index():
                            recent_activities=recent_activities)
 
 
-def get_isv_sr_no(isv_name=None):
+@app.route('/check_isv_name', methods=['POST'])
+def check_isv_name():
+    isv_name = request.json.get('isv_name')
+    query = f"""
+    SELECT Sr_No
+    FROM `{dataset_id}.{table_id}`
+    WHERE LOWER(isv_name) = LOWER('{isv_name}')
+    LIMIT 1
     """
-    Get Sr_No based on ISV name or get max Sr_No
-    """
-    if isv_name:
-        # Get Sr_No for existing ISV
-        query = f"""
-        SELECT Sr_No
-        FROM `{dataset_id}.{table_id}`
-        WHERE LOWER(isv_name) = LOWER('{isv_name}')
-        LIMIT 1
-        """
-    else:
-        # Get max Sr_No
-        query = f"""
-        SELECT IFNULL(MAX(Sr_No), 0) as max_sr_no
-        FROM `{dataset_id}.{table_id}`
-        """
+    result = list(client.query(query).result())
 
+    if result:
+        return jsonify({
+            'exists': True,
+            'Sr_No': result[0].Sr_No
+        })
+    return jsonify({'exists': False})
+
+
+@app.route('/get_max_sr_no', methods=['GET'])
+def get_max_sr_no():
+    query = f"""
+    SELECT MAX(Sr_No) as max_sr_no
+    FROM `{dataset_id}.{table_id}`
+    """
     result = list(client.query(query).result())[0]
-    return result.Sr_No if isv_name else result.max_sr_no
+    return jsonify({'max_sr_no': result.max_sr_no or 0})
 
 
 @app.route('/add_isv', methods=['GET', 'POST'])
@@ -84,10 +90,30 @@ def add_isv():
             # Join multiple domains with commas
             domains = ','.join(form.domain.data)
 
+            # Get Sr_No based on ISV existence
+            isv_query = f"""
+            SELECT Sr_No
+            FROM `{dataset_id}.{table_id}`
+            WHERE LOWER(isv_name) = LOWER('{form.isv_name.data}')
+            LIMIT 1
+            """
+            isv_result = list(client.query(isv_query).result())
+
+            if isv_result:
+                sr_no = isv_result[0].Sr_No
+            else:
+                max_query = f"""
+                SELECT MAX(Sr_No) as max_sr_no
+                FROM `{dataset_id}.{table_id}`
+                """
+                max_result = list(client.query(max_query).result())[0]
+                sr_no = (max_result.max_sr_no or 0) + 1
+
             # Prepare the data for BigQuery
-            rows_to_insert = [{
+            data_to_insert = {
+                'Sr_No': sr_no,
                 'isv_name': form.isv_name.data,
-                'domain': domains,  # Now contains comma-separated domains
+                'domain': domains,
                 'certification_type': form.certification_type.data,
                 'version': form.version.data,
                 'description': form.description.data,
@@ -97,11 +123,11 @@ def add_isv():
                 'poc': form.poc.data,
                 'status': form.status.data,
                 'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            }]
+            }
 
             # Insert into BigQuery
             table_ref = client.dataset(dataset_id).table(table_id)
-            errors = client.insert_rows_json(table_ref, rows_to_insert)
+            errors = client.insert_rows_json(table_ref, [data_to_insert])
 
             if errors == []:
                 flash('ISV successfully added!', 'success')
@@ -113,25 +139,6 @@ def add_isv():
             flash(f'Error: {str(e)}', 'error')
 
     return render_template('add_isv.html', form=form)
-
-
-@app.route('/check_isv_name', methods=['POST'])
-def check_isv_name():
-    isv_name = request.json.get('isv_name')
-    query = f"""
-    SELECT Sr_No, COUNT(*) as count
-    FROM `{dataset_id}.{table_id}`
-    WHERE LOWER(isv_name) = LOWER('{isv_name}')
-    GROUP BY Sr_No
-    """
-    result = list(client.query(query).result())
-    exists = len(result) > 0
-    sr_no = result[0].Sr_No if exists else None
-
-    return jsonify({
-        'exists': exists,
-        'sr_no': sr_no
-    })
 
 # Create ISV Tasks table if it doesn't exist
 CREATE_TASKS_TABLE = f"""
