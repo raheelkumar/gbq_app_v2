@@ -19,7 +19,7 @@ class ISVForm(FlaskForm):
     certification_type = SelectField('Certification Type',
                                      choices=[
                                          ('lite', 'Lite'),
-                                         ('detailed', 'Detailed')
+                                         ('detailed', 'Detailed'),
                                      ],
                                      validators=[DataRequired()]
                                      )
@@ -35,7 +35,7 @@ class ISVForm(FlaskForm):
     ])
 
     start_date = DateField('Start Date', validators=[DataRequired()])
-    end_date = DateField('End Date', validators=[DataRequired()])
+    end_date = DateField('End Date')
 
     poc = StringField('POC', validators=[
         DataRequired(),
@@ -54,6 +54,3 @@ class ISVForm(FlaskForm):
     def validate_end_date(self, field):
         if field.data < self.start_date.data:
             raise ValidationError('End date must be after start date')
-
-        if field.data < datetime.now().date():
-            raise ValidationError('End date cannot be in the past')
