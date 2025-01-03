@@ -3,9 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from google.cloud import bigquery
 import pandas as pd
 from datetime import datetime
-
 from google.oauth2 import service_account
-
 from forms import ISVForm
 import os
 
