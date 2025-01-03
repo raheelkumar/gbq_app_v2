@@ -13,7 +13,7 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
 # BigQuery client setup
-credentials = service_account.Credentials.from_service_account_file('treasure_data_sa.json')
+credentials = service_account.Credentials.from_service_account_file('gbq_app_service_account.json')
 project_id = 'wwbq-treasuredata'
 client = bigquery.Client(credentials=credentials, project=project_id)
 dataset_id = "GBQ"
