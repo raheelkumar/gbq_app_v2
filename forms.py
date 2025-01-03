@@ -75,13 +75,11 @@ class ISVForm(FlaskForm):
                          )
 
     assessment_sheet = URLField('Assessment Sheet (Google Sheets)', validators=[
-        DataRequired(),
         URL(),
         validate_google_sheet
     ])
 
     questions_doc = URLField('Questions Document (Google Docs)', validators=[
-        DataRequired(),
         URL(),
         validate_google_doc
     ])

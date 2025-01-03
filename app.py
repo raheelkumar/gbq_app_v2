@@ -55,31 +55,31 @@ def index():
 
 @app.route('/check_isv_name', methods=['POST'])
 def check_isv_name():
-    isv_name = request.json.get('isv_name')
-    query = f"""
-    SELECT Sr_No
-    FROM `{dataset_id}.{table_id}`
-    WHERE LOWER(isv_name) = LOWER('{isv_name}')
-    LIMIT 1
-    """
-    result = list(client.query(query).result())
+    try:
+        isv_name = request.json.get('isv_name')
 
-    if result:
+        # Get the maximum Sr_No
+        max_srno_query = f"""
+        SELECT MAX(Sr_No) as max_srno
+        FROM `{dataset_id}.{table_id}`
+        """
+        max_srno_result = list(client.query(max_srno_query).result())[0]
+        next_srno = (max_srno_result.max_srno or 0) + 1
+
+        # Check if ISV exists
+        exists_query = f"""
+        SELECT COUNT(*) as count
+        FROM `{dataset_id}.{table_id}`
+        WHERE LOWER(isv_name) = LOWER('{isv_name}')
+        """
+        exists_result = list(client.query(exists_query).result())[0]
+
         return jsonify({
-            'exists': True,
-            'Sr_No': result[0].Sr_No
+            'exists': exists_result.count > 0,
+            'next_srno': next_srno
         })
-    return jsonify({'exists': False})
-
-
-@app.route('/get_max_sr_no', methods=['GET'])
-def get_max_sr_no():
-    query = f"""
-    SELECT MAX(Sr_No) as max_sr_no
-    FROM `{dataset_id}.{table_id}`
-    """
-    result = list(client.query(query).result())[0]
-    return jsonify({'max_sr_no': result.max_sr_no or 0})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/add_isv', methods=['GET', 'POST'])
@@ -87,31 +87,20 @@ def add_isv():
     form = ISVForm()
     if form.validate_on_submit():
         try:
+            # Get the maximum Sr_No
+            max_srno_query = f"""
+            SELECT MAX(Sr_No) as max_srno
+            FROM `{dataset_id}.{table_id}`
+            """
+            max_srno_result = list(client.query(max_srno_query).result())[0]
+            next_srno = (max_srno_result.max_srno or 0) + 1
+
             # Join multiple domains with commas
             domains = ','.join(form.domain.data)
 
-            # Get Sr_No based on ISV existence
-            isv_query = f"""
-            SELECT Sr_No
-            FROM `{dataset_id}.{table_id}`
-            WHERE LOWER(isv_name) = LOWER('{form.isv_name.data}')
-            LIMIT 1
-            """
-            isv_result = list(client.query(isv_query).result())
-
-            if isv_result:
-                sr_no = isv_result[0].Sr_No
-            else:
-                max_query = f"""
-                SELECT MAX(Sr_No) as max_sr_no
-                FROM `{dataset_id}.{table_id}`
-                """
-                max_result = list(client.query(max_query).result())[0]
-                sr_no = (max_result.max_sr_no or 0) + 1
-
             # Prepare the data for BigQuery
             data_to_insert = {
-                'Sr_No': sr_no,
+                'Sr_No': next_srno,
                 'isv_name': form.isv_name.data,
                 'domain': domains,
                 'certification_type': form.certification_type.data,
@@ -161,30 +150,41 @@ PREDEFINED_TASKS = [
 ]
 
 
+# Update the task initialization function
+def initialize_isv_tasks(sr_no):
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    for task_name in PREDEFINED_TASKS:
+        query = f"""
+        INSERT INTO `{dataset_id}.isv_tasks`
+        (Sr_No, task_name, status, updated_at)
+        VALUES
+        ({sr_no}, '{task_name}', 'not_started', '{now}')
+        """
+        client.query(query).result()
+
+# Update current_isvs route
 @app.route('/current_isvs')
 def current_isvs():
-    # Get ISVs with their tasks and completion percentage
     query = f"""
     WITH TaskStats AS (
         SELECT 
-            isv_name,
+            Sr_No,
             COUNT(*) as total_tasks,
             COUNTIF(status = 'completed') as completed_tasks
         FROM `{dataset_id}.isv_tasks`
-        GROUP BY isv_name
+        GROUP BY Sr_No
     )
     SELECT 
         i.*,
         IFNULL(ts.completed_tasks, 0) as completed_tasks,
         IFNULL(ROUND(IFNULL(ts.completed_tasks, 0) * 100.0 / 5, 1), 0) as completion_percentage
     FROM `{dataset_id}.{table_id}` i
-    LEFT JOIN TaskStats ts ON i.isv_name = ts.isv_name
+    LEFT JOIN TaskStats ts ON i.Sr_No = ts.Sr_No
     WHERE i.status != 'Completed'
     ORDER BY i.start_date DESC
     """
 
     isvs_query = client.query(query)
-    # Convert Row objects to dictionaries
     isvs = [dict(row.items()) for row in isvs_query.result()]
 
     # Get tasks for each ISV
@@ -192,56 +192,21 @@ def current_isvs():
         tasks_query = f"""
         SELECT *
         FROM `{dataset_id}.isv_tasks`
-        WHERE isv_name = '{isv['isv_name']}'
+        WHERE Sr_No = {isv['Sr_No']}
         ORDER BY task_name
         """
         tasks = list(client.query(tasks_query).result())
 
         # If no tasks exist, initialize them
         if not tasks:
-            initialize_isv_tasks(isv['isv_name'])
+            initialize_isv_tasks(isv['Sr_No'])
             tasks = list(client.query(tasks_query).result())
 
-        # Convert task Row objects to dictionaries
         isv['tasks'] = [dict(task.items()) for task in tasks]
 
     return render_template('current_isvs.html', isvs=isvs)
 
-
-def initialize_isv_tasks(isv_name):
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    for task_name in PREDEFINED_TASKS:
-        query = f"""
-        INSERT INTO `{dataset_id}.isv_tasks`
-        (isv_name, task_name, status, updated_at)
-        VALUES
-        ('{isv_name}', '{task_name}', 'not_started', '{now}')
-        """
-        client.query(query).result()
-
-
-@app.route('/isv/<isv_name>', methods=['DELETE'])
-def delete_isv(isv_name):
-    try:
-        # Delete tasks first
-        delete_tasks_query = f"""
-        DELETE FROM `{dataset_id}.isv_tasks`
-        WHERE isv_name = '{isv_name}'
-        """
-        client.query(delete_tasks_query).result()
-
-        # Delete ISV
-        delete_isv_query = f"""
-        DELETE FROM `{dataset_id}.{table_id}`
-        WHERE isv_name = '{isv_name}'
-        """
-        client.query(delete_isv_query).result()
-
-        return jsonify({'message': 'ISV deleted successfully'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
+# Update task status route
 @app.route('/task/status', methods=['PUT'])
 def update_task_status():
     try:
@@ -251,22 +216,75 @@ def update_task_status():
         query = f"""
         UPDATE `{dataset_id}.isv_tasks`
         SET status = '{data['status']}', updated_at = '{now}'
-        WHERE isv_name = '{data['isv_name']}'
+        WHERE Sr_No = {data['sr_no']}
         AND task_name = '{data['task_name']}'
         """
         client.query(query).result()
+
+        # Check if all tasks are completed
+        check_query = f"""
+        SELECT COUNT(*) as incomplete_tasks
+        FROM `{dataset_id}.isv_tasks`
+        WHERE Sr_No = {data['sr_no']}
+        AND status != 'completed'
+        """
+        result = list(client.query(check_query).result())[0]
+
+        # Update ISV status if all tasks are completed
+        if result.incomplete_tasks == 0:
+            update_isv_query = f"""
+            UPDATE `{dataset_id}.{table_id}`
+            SET status = 'completed'
+            WHERE Sr_No = {data['sr_no']}
+            """
+            client.query(update_isv_query).result()
 
         return jsonify({'message': 'Task status updated successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Update delete ISV route
+@app.route('/isv/<int:sr_no>', methods=['DELETE'])
+def delete_isv(sr_no):
+    try:
+        # Delete tasks first
+        delete_tasks_query = f"""
+        DELETE FROM `{dataset_id}.isv_tasks`
+        WHERE Sr_No = {sr_no}
+        """
+        client.query(delete_tasks_query).result()
 
-@app.route('/isv/<isv_name>/edit', methods=['GET'])
-def edit_isv(isv_name):
+        # Delete ISV
+        delete_isv_query = f"""
+        DELETE FROM `{dataset_id}.{table_id}`
+        WHERE Sr_No = {sr_no}
+        """
+        client.query(delete_isv_query).result()
+
+        return jsonify({'message': 'ISV deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/isv/<int:sr_no>/edit', methods=['GET'])
+def edit_isv(sr_no):
     query = f"""
-    SELECT *
+    SELECT 
+        Sr_No,
+        isv_name,
+        domain,
+        certification_type,
+        version,
+        description,
+        team_members,
+        start_date,
+        end_date,
+        poc,
+        status,
+        assessment_sheet,
+        questions_doc
     FROM `{dataset_id}.{table_id}`
-    WHERE isv_name = '{isv_name}'
+    WHERE Sr_No = {sr_no}
     """
     result = list(client.query(query).result())[0]
 
@@ -275,12 +293,18 @@ def edit_isv(isv_name):
     if result_dict.get('domain'):
         result_dict['domain'] = result_dict['domain'].split(',')
 
+    # Convert start_date and end_date if they are strings
+    if isinstance(result_dict.get('start_date'), str):
+        result_dict['start_date'] = datetime.strptime(result_dict['start_date'], '%Y-%m-%d').date()
+    if isinstance(result_dict.get('end_date'), str):
+        result_dict['end_date'] = datetime.strptime(result_dict['end_date'], '%Y-%m-%d').date()
+
     form = ISVForm(data=result_dict)
-    return render_template('edit_isv.html', form=form, isv_name=isv_name)
+    return render_template('edit_isv.html', form=form, sr_no=sr_no, isv_name=result_dict['isv_name'])
 
 
-@app.route('/isv/<isv_name>/update', methods=['POST'])
-def update_isv(isv_name):
+@app.route('/isv/<int:sr_no>/update', methods=['POST'])
+def update_isv(sr_no):
     form = ISVForm()
     if form.validate_on_submit():
         try:
@@ -290,6 +314,7 @@ def update_isv(isv_name):
             query = f"""
             UPDATE `{dataset_id}.{table_id}`
             SET
+                isv_name = '{form.isv_name.data}',
                 domain = '{domains}',
                 certification_type = '{form.certification_type.data}',
                 version = '{form.version.data}',
@@ -298,8 +323,10 @@ def update_isv(isv_name):
                 start_date = '{form.start_date.data.strftime('%Y-%m-%d')}',
                 end_date = '{form.end_date.data.strftime('%Y-%m-%d')}',
                 poc = '{form.poc.data}',
-                status = '{form.status.data}'
-            WHERE isv_name = '{isv_name}'
+                status = '{form.status.data}',
+                assessment_sheet = '{form.assessment_sheet.data}',
+                questions_doc = '{form.questions_doc.data}'
+            WHERE Sr_No = {sr_no}
             """
             client.query(query).result()
 
@@ -308,7 +335,7 @@ def update_isv(isv_name):
         except Exception as e:
             flash(f'Error: {str(e)}', 'error')
 
-    return render_template('edit_isv.html', form=form, isv_name=isv_name)
+    return render_template('edit_isv.html', form=form, sr_no=sr_no)
 
 
 @app.route('/isv_history')
