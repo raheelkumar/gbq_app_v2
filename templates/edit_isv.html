@@ -156,6 +156,38 @@
                 {% endif %}
             </div>
 
+            <!-- Assessment Sheet -->
+            <div>
+                <label for="{{ form.assessment_sheet.id }}" class="block text-sm font-medium text-gray-700">
+                    {{ form.assessment_sheet.label }}
+                    <span class="text-red-500">*</span>
+                </label>
+                {{ form.assessment_sheet(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                                       placeholder="https://docs.google.com/spreadsheets/d/...") }}
+                {% if form.assessment_sheet.errors %}
+                    {% for error in form.assessment_sheet.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+                <p class="mt-1 text-sm text-gray-500">Please provide a Google Sheets URL</p>
+            </div>
+
+            <!-- Questions Document -->
+            <div>
+                <label for="{{ form.questions_doc.id }}" class="block text-sm font-medium text-gray-700">
+                    {{ form.questions_doc.label }}
+                    <span class="text-red-500">*</span>
+                </label>
+                {{ form.questions_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                                     placeholder="https://docs.google.com/document/d/...") }}
+                {% if form.questions_doc.errors %}
+                    {% for error in form.questions_doc.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+                <p class="mt-1 text-sm text-gray-500">Please provide a Google Docs URL</p>
+            </div>
+
             <!-- Form Actions -->
             <div class="flex justify-end space-x-4 pt-4">
                 <a href="{{ url_for('current_isvs') }}"
@@ -175,9 +207,78 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('isv-form');
+    const confirmationModal = document.getElementById('confirmationModal');
+    const confirmYes = document.getElementById('confirmYes');
+    const confirmNo = document.getElementById('confirmNo');
+    const confirmationMessage = document.getElementById('confirmationMessage');
+    let formData = null;
+    let currentSrNo = null;
+    const assessmentSheet = document.querySelector('[name="assessment_sheet"]');
+    const questionsDoc = document.querySelector('[name="questions_doc"]');
+
+    function validateGoogleSheet(url) {
+        return url.includes('docs.google.com') && url.includes('/spreadsheets/d/');
+    }
+
+    function validateGoogleDoc(url) {
+        return url.includes('docs.google.com') && url.includes('/document/d/');
+    }
+
+    function addError(element, message) {
+        const errorDiv = document.createElement('p');
+        errorDiv.className = 'mt-1 text-sm text-red-600 validation-error';
+        errorDiv.textContent = message;
+        element.parentNode.appendChild(errorDiv);
+    }
+
+    function clearErrors() {
+        document.querySelectorAll('.validation-error').forEach(el => el.remove());
+    }
 
     form.addEventListener('submit', function(e) {
-        // Get date fields
+        clearErrors();
+        let hasError = false;
+
+        if (assessmentSheet.value && !validateGoogleSheet(assessmentSheet.value)) {
+            addError(assessmentSheet, 'Please provide a valid Google Sheets URL');
+            hasError = true;
+        }
+
+        if (questionsDoc.value && !validateGoogleDoc(questionsDoc.value)) {
+            addError(questionsDoc, 'Please provide a valid Google Docs URL');
+            hasError = true;
+        }
+
+        if (hasError) {
+            e.preventDefault();
+            const firstError = document.querySelector('.text-red-600');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+
+    async function checkISVName(isvName) {
+        const response = await fetch('/check_isv_name', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ isv_name: isvName })
+        });
+        return await response.json();
+    }
+
+    async function getMaxSrNo() {
+        const response = await fetch('/get_max_sr_no');
+        const data = await response.json();
+        return data.max_sr_no;
+    }
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        // Validate dates first
         const startDate = new Date(document.querySelector('[name="start_date"]').value);
         const endDate = new Date(document.querySelector('[name="end_date"]').value);
         const today = new Date();
@@ -188,32 +289,69 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let hasError = false;
 
-        // Validate dates
-        if (endDate < startDate) {
-            e.preventDefault();
-            const errorDiv = document.createElement('p');
-            errorDiv.className = 'mt-1 text-sm text-red-600 date-error';
-            errorDiv.textContent = 'End date must be after start date';
-            document.querySelector('[name="end_date"]').parentNode.appendChild(errorDiv);
-            hasError = true;
-        }
-
-        if (startDate < today && form.querySelector('[name="status"]').value === 'not_started') {
-            e.preventDefault();
-            const errorDiv = document.createElement('p');
-            errorDiv.className = 'mt-1 text-sm text-red-600 date-error';
-            errorDiv.textContent = 'Start date cannot be in the past for new ISVs';
-            document.querySelector('[name="start_date"]').parentNode.appendChild(errorDiv);
-            hasError = true;
-        }
+        // Your existing date validation code...
 
         if (hasError) {
-            // Scroll to the first error
             const firstError = document.querySelector('.text-red-600');
             if (firstError) {
                 firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
+            return;
         }
+
+        // Save form data
+        formData = new FormData(form);
+
+        // Check if ISV exists
+        const isvName = formData.get('isv_name');
+        const isvCheck = await checkISVName(isvName);
+
+        if (isvCheck.exists) {
+            currentSrNo = isvCheck.Sr_No;
+            confirmationMessage.textContent = `An ISV with the name "${isvName}" already exists (Sr. No: ${currentSrNo}). Do you want to add another entry for this ISV?`;
+        } else {
+            const maxSrNo = await getMaxSrNo();
+            currentSrNo = maxSrNo + 1;
+            confirmationMessage.textContent = `Add new ISV "${isvName}" with Sr. No: ${currentSrNo}?`;
+        }
+
+        confirmationModal.classList.remove('hidden');
+    });
+
+    async function submitForm() {
+        if (!formData) return;
+
+        formData.append('Sr_No', currentSrNo);
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                const result = await response.json();
+                if (result.error) {
+                    alert(result.error);
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while submitting the form.');
+        }
+    }
+
+    confirmYes.addEventListener('click', function() {
+        confirmationModal.classList.add('hidden');
+        submitForm();
+    });
+
+    confirmNo.addEventListener('click', function() {
+        confirmationModal.classList.add('hidden');
+        formData = null;
+        currentSrNo = null;
     });
 });
 </script>

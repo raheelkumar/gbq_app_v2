@@ -122,6 +122,8 @@ def add_isv():
                 'end_date': form.end_date.data.strftime('%Y-%m-%d'),
                 'poc': form.poc.data,
                 'status': form.status.data,
+                'assessment_sheet': form.assessment_sheet.data,
+                'questions_doc': form.questions_doc.data,
                 'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
 
