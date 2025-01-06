@@ -225,6 +225,7 @@ def update_task_status():
         data = request.json
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
+        # Update the task status
         query = f"""
         UPDATE `{dataset_id}.isv_tasks`
         SET status = '{data['status']}', updated_at = '{now}'
