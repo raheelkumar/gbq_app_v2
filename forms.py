@@ -57,6 +57,7 @@ class ISVForm(FlaskForm):
     ])
 
     start_date = DateField('Start Date', validators=[DataRequired()])
+    end_date = DateField('End Date', validators=None)
 
     poc = StringField('POC', validators=[
         Length(max=100)
@@ -64,8 +65,8 @@ class ISVForm(FlaskForm):
 
     status = SelectField('Status',
                         choices=[
-                            ('not_started', 'Not Started'),
-                            ('in_progress', 'In Progress'),
+                            ('not started', 'Not Started'),
+                            ('in progress', 'In Progress'),
                             ('completed', 'Completed')
                         ],
                         validators=[DataRequired()]
