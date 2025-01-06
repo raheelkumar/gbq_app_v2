@@ -35,16 +35,15 @@ class ISVForm(FlaskForm):
                                validators=[DataRequired()])
 
     certification_type = SelectField('Certification Type',
-                                     choices=[
-                                         ('lite', 'Lite'),
-                                         ('detailed', 'Detailed'),
-                                     ],
-                                     validators=[DataRequired()]
-                                     )
+                                   choices=[
+                                       ('lite', 'Lite'),
+                                       ('detailed', 'Detailed'),
+                                   ],
+                                   validators=[DataRequired()]
+                                   )
 
     version = TextAreaField('Version', validators=[
-        DataRequired(),
-        Length(min=10, max=500)
+        Length(max=500)
     ])
 
     description = TextAreaField('Description', validators=[
@@ -58,32 +57,24 @@ class ISVForm(FlaskForm):
     ])
 
     start_date = DateField('Start Date', validators=[DataRequired()])
-    end_date = DateField('End Date')
 
     poc = StringField('POC', validators=[
-        DataRequired(),
-        Length(min=2, max=100)
+        Length(max=100)
     ])
 
     status = SelectField('Status',
-                         choices=[
-                             ('not_started', 'Not Started'),
-                             ('in_progress', 'In Progress'),
-                             ('completed', 'Completed')
-                         ],
-                         validators=[DataRequired()]
-                         )
+                        choices=[
+                            ('not_started', 'Not Started'),
+                            ('in_progress', 'In Progress'),
+                            ('completed', 'Completed')
+                        ],
+                        validators=[DataRequired()]
+                        )
 
     assessment_sheet = URLField('Assessment Sheet (Google Sheets)', validators=[
-        URL(),
         validate_google_sheet
     ])
 
     questions_doc = URLField('Questions Document (Google Docs)', validators=[
-        URL(),
         validate_google_doc
     ])
-
-    def validate_end_date(self, field):
-        if field.data < self.start_date.data:
-            raise ValidationError('End date must be after start date')

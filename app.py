@@ -106,7 +106,6 @@ def add_isv():
                 'description': form.description.data,
                 'team_members': form.team_members.data,
                 'start_date': form.start_date.data.strftime('%Y-%m-%d'),
-                'end_date': form.end_date.data.strftime('%Y-%m-%d'),
                 'poc': form.poc.data,
                 'status': form.status.data,
                 'assessment_sheet': form.assessment_sheet.data,
@@ -119,13 +118,28 @@ def add_isv():
             errors = client.insert_rows_json(table_ref, [data_to_insert])
 
             if errors == []:
+                # Initialize tasks for the new ISV
+                initialize_isv_tasks(next_srno)
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': True, 'redirect': url_for('current_isvs')})
                 flash('ISV successfully added!', 'success')
                 return redirect(url_for('current_isvs'))
             else:
-                flash('Error occurred while adding ISV.', 'error')
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': False, 'error': str(errors)}), 400
+                flash(f'Error occurred while adding ISV: {str(errors)}', 'error')
 
         except Exception as e:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': str(e)}), 500
             flash(f'Error: {str(e)}', 'error')
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({
+            'success': False,
+            'error': 'Invalid form data',
+            'errors': form.errors
+        }), 400
 
     return render_template('add_isv.html', form=form)
 

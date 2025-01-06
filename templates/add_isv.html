@@ -25,25 +25,22 @@
 </div>
 
 <div class="max-w-3xl mx-auto">
-    <!-- Page Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900">Add New ISV</h1>
         <p class="mt-2 text-gray-600">Enter the details for the new ISV partnership</p>
     </div>
 
-    <!-- Form Card -->
     <div class="bg-white rounded-lg shadow-md p-6">
         <form method="POST" class="space-y-6" id="isv-form">
             {{ form.csrf_token }}
 
-            <!-- ISV Name -->
+            <!-- Required fields remain the same -->
             <div>
                 <label for="{{ form.isv_name.id }}" class="block text-sm font-medium text-gray-700">
                     {{ form.isv_name.label }}
                     <span class="text-red-500">*</span>
                 </label>
                 {{ form.isv_name(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", onblur="checkISVName(this.value)") }}
-                <p id="isv-name-error" class="mt-1 text-sm text-red-600 hidden"></p>
                 {% if form.isv_name.errors %}
                     {% for error in form.isv_name.errors %}
                         <p class="mt-1 text-sm text-red-600">{{ error }}</p>
@@ -51,7 +48,7 @@
                 {% endif %}
             </div>
 
-            <!-- Domain -->
+            <!-- Domain (required) -->
             <div>
                 <label for="{{ form.domain.id }}" class="block text-sm font-medium text-gray-700">
                     {{ form.domain.label }}
@@ -65,7 +62,7 @@
                 {% endif %}
             </div>
 
-            <!-- Certification Type -->
+            <!-- Certification Type (required) -->
             <div>
                 <label for="{{ form.certification_type.id }}" class="block text-sm font-medium text-gray-700">
                     {{ form.certification_type.label }}
@@ -79,11 +76,10 @@
                 {% endif %}
             </div>
 
-            <!-- Version -->
+            <!-- Version (optional) -->
             <div>
                 <label for="{{ form.version.id }}" class="block text-sm font-medium text-gray-700">
                     {{ form.version.label }}
-                    <span class="text-red-500">*</span>
                 </label>
                 {{ form.version(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", rows="4") }}
                 {% if form.version.errors %}
@@ -93,7 +89,7 @@
                 {% endif %}
             </div>
 
-            <!-- Version Description -->
+            <!-- Description (required) -->
             <div>
                 <label for="{{ form.description.id }}" class="block text-sm font-medium text-gray-700">
                     {{ form.description.label }}
@@ -107,7 +103,7 @@
                 {% endif %}
             </div>
 
-            <!-- Team Members -->
+            <!-- Team Members (required) -->
             <div>
                 <label for="{{ form.team_members.id }}" class="block text-sm font-medium text-gray-700">
                     {{ form.team_members.label }}
@@ -122,42 +118,24 @@
                 {% endif %}
             </div>
 
-            <!-- Date Range -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Start Date -->
-                <div>
-                    <label for="{{ form.start_date.id }}" class="block text-sm font-medium text-gray-700">
-                        {{ form.start_date.label }}
-                        <span class="text-red-500">*</span>
-                    </label>
-                    {{ form.start_date(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", type="date") }}
-                    {% if form.start_date.errors %}
-                        {% for error in form.start_date.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-
-                <!-- End Date -->
-                <div>
-                    <label for="{{ form.end_date.id }}" class="block text-sm font-medium text-gray-700">
-                        {{ form.end_date.label }}
-                        <span class="text-red-500">*</span>
-                    </label>
-                    {{ form.end_date(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", type="date") }}
-                    {% if form.end_date.errors %}
-                        {% for error in form.end_date.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                        {% endfor %}
-                    {% endif %}
-                </div>
+            <!-- Start Date (required) -->
+            <div>
+                <label for="{{ form.start_date.id }}" class="block text-sm font-medium text-gray-700">
+                    {{ form.start_date.label }}
+                    <span class="text-red-500">*</span>
+                </label>
+                {{ form.start_date(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", type="date") }}
+                {% if form.start_date.errors %}
+                    {% for error in form.start_date.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
             </div>
 
-            <!-- POC -->
+            <!-- POC (optional) -->
             <div>
                 <label for="{{ form.poc.id }}" class="block text-sm font-medium text-gray-700">
                     {{ form.poc.label }}
-                    <span class="text-red-500">*</span>
                 </label>
                 {{ form.poc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm") }}
                 {% if form.poc.errors %}
@@ -167,7 +145,7 @@
                 {% endif %}
             </div>
 
-            <!-- Status -->
+            <!-- Status (required) -->
             <div>
                 <label for="{{ form.status.id }}" class="block text-sm font-medium text-gray-700">
                     {{ form.status.label }}
@@ -181,11 +159,10 @@
                 {% endif %}
             </div>
 
-            <!-- Assessment Sheet -->
+            <!-- Assessment Sheet (optional) -->
             <div>
                 <label for="{{ form.assessment_sheet.id }}" class="block text-sm font-medium text-gray-700">
                     {{ form.assessment_sheet.label }}
-                    <span class="text-red-500">*</span>
                 </label>
                 {{ form.assessment_sheet(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
                                        placeholder="https://docs.google.com/spreadsheets/d/...") }}
@@ -197,11 +174,10 @@
                 <p class="mt-1 text-sm text-gray-500">Please provide a Google Sheets URL</p>
             </div>
 
-            <!-- Questions Document -->
+            <!-- Questions Document (optional) -->
             <div>
                 <label for="{{ form.questions_doc.id }}" class="block text-sm font-medium text-gray-700">
                     {{ form.questions_doc.label }}
-                    <span class="text-red-500">*</span>
                 </label>
                 {{ form.questions_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
                                      placeholder="https://docs.google.com/document/d/...") }}
@@ -238,60 +214,67 @@ document.addEventListener('DOMContentLoaded', function() {
     let formData = null;
     let nextSrNo = null;
 
-    const assessmentSheet = document.querySelector('[name="assessment_sheet"]');
-    const questionsDoc = document.querySelector('[name="questions_doc"]');
+    async function submitForm() {
+        if (!formData) return;
 
-    function validateGoogleSheet(url) {
-        return url.includes('docs.google.com') && url.includes('/spreadsheets/d/');
-    }
+        try {
+            // Get the CSRF token
+            const csrfToken = document.querySelector('input[name="csrf_token"]').value;
 
-    function validateGoogleDoc(url) {
-        return url.includes('docs.google.com') && url.includes('/document/d/');
-    }
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'same-origin', // Include cookies
+                body: formData
+            });
 
-    function addError(element, message) {
-        const errorDiv = document.createElement('p');
-        errorDiv.className = 'mt-1 text-sm text-red-600 validation-error';
-        errorDiv.textContent = message;
-        element.parentNode.appendChild(errorDiv);
-    }
-
-    function clearErrors() {
-        document.querySelectorAll('.validation-error').forEach(el => el.remove());
-    }
-
-    form.addEventListener('submit', function(e) {
-        clearErrors();
-        let hasError = false;
-
-        if (assessmentSheet.value && !validateGoogleSheet(assessmentSheet.value)) {
-            addError(assessmentSheet, 'Please provide a valid Google Sheets URL');
-            hasError = true;
-        }
-
-        if (questionsDoc.value && !validateGoogleDoc(questionsDoc.value)) {
-            addError(questionsDoc, 'Please provide a valid Google Docs URL');
-            hasError = true;
-        }
-
-        if (hasError) {
-            e.preventDefault();
-            const firstError = document.querySelector('.text-red-600');
-            if (firstError) {
-                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (response.redirected) {
+                // Handle redirect response
+                window.location.href = response.url;
+                return;
             }
+
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'Form submission failed');
+                }
+                if (result.redirect) {
+                    window.location.href = result.redirect;
+                }
+            } else {
+                // Handle non-JSON response (like direct HTML response)
+                if (!response.ok) {
+                    throw new Error('Form submission failed');
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert(error.message || 'An error occurred while submitting the form. Please try again.');
         }
-    });
+    }
 
     async function checkISVName(isvName) {
+        if (!isvName) return { exists: false };
+
         try {
             const response = await fetch('/check_isv_name', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: JSON.stringify({ isv_name: isvName })
             });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
             const data = await response.json();
             nextSrNo = data.next_srno;
             return data;
@@ -306,7 +289,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Validate dates first
         const startDate = new Date(document.querySelector('[name="start_date"]').value);
-        const endDate = new Date(document.querySelector('[name="end_date"]').value);
         const today = new Date();
 
         // Reset any existing error messages
@@ -315,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let hasError = false;
 
-        // Your existing date validation code...
+
 
         if (hasError) {
             const firstError = document.querySelector('.text-red-600');
@@ -325,8 +307,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Save form data
+        // Save form data and ensure all fields are included
         formData = new FormData(form);
+
 
         // Check if ISV exists
         const isvName = formData.get('isv_name');
@@ -343,29 +326,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show confirmation modal
         confirmationModal.classList.remove('hidden');
     });
-
-    async function submitForm() {
-        if (!formData) return;
-
-        try {
-            const response = await fetch(form.action, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.redirected) {
-                window.location.href = response.url;
-            } else {
-                const result = await response.json();
-                if (result.error) {
-                    alert('Error: ' + result.error);
-                }
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('An error occurred while submitting the form.');
-        }
-    }
 
     confirmYes.addEventListener('click', function() {
         confirmationModal.classList.add('hidden');
