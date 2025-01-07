@@ -244,13 +244,13 @@ def update_task_status():
         result = list(client.query(check_query).result())[0]
 
         # Update ISV status if all tasks are completed
-        if result.incomplete_tasks == 0:
-            update_isv_query = f"""
-            UPDATE `{dataset_id}.{table_id}`
-            SET status = 'completed'
-            WHERE Sr_No = {data['sr_no']}
-            """
-            client.query(update_isv_query).result()
+        # if result.incomplete_tasks == 0:
+        #     update_isv_query = f"""
+        #     UPDATE `{dataset_id}.{table_id}`
+        #     SET status = 'completed'
+        #     WHERE Sr_No = {data['sr_no']}
+        #     """
+        #     client.query(update_isv_query).result()
 
         return jsonify({'message': 'Task status updated successfully'}), 200
     except Exception as e:
