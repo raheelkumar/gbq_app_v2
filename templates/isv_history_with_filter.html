@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISV Data Filter</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Set the body to take full height */
+        body {
+            margin-left: 20px;
+            margin-right: 20px;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header section with a blue background */
+        header {
+            background-color: #007bff;
+            /* Blue background */
+            padding: 20px 0;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            width: auto;
+            /* Ensure the header takes up full width */
+            box-sizing: border-box;
+            /* Ensures padding doesn't overflow */
+            margin-bottom: 20px;
+        }
+
+        /* Main container should have white background and content */
+        .main-container {
+            background-color: white;
+            /* White background for the content */
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            /* Remove left and right margin for full width */
+            width: 100%;
+            /* Ensure it spans the entire width */
+            max-width: 1400px;
+            /* Max width for large screens */
+            margin-left: 10px;
+            /* Remove left margin */
+            margin-right: 10px;
+            /* Remove right margin */
+        }
+
+        /* Filter container (Quarter, Year, Filter) */
+        .filter-container {
+            display: flex;
+            justify-content: flex-start;
+            gap: 10px;
+            /* Reduce space between elements */
+            flex-wrap: wrap;
+            /* Allow wrapping of elements */
+            margin-bottom: 10px;
+        }
+
+        .filter-container a {
+            display: block;
+            margin-top: 5px;
+            margin-left: 0;
+            /* text-align: center; */
+            text-decoration: none;
+            white-space: nowrap;
+            width: 100px;
+            color: #007bff;
+        }
+
+        .filter-container a:hover {
+            text-decoration: underline;
+        }
+
+        .button-link-container {
+            display: flex;
+            align-items: center;
+            /* Vertically align the button and link */
+            gap: 20px;
+            /* Minimize the gap between the button and link */
+        }
+
+        .button-link-container a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 1rem;
+            margin: 0;
+            /* Remove additional margin */
+        }
+
+        .button-link-container a:hover {
+            text-decoration: underline;
+        }
+
+        .filter-container div {
+            width: 100%;
+            /* Ensure they are full width on small screens */
+            max-width: 250px;
+            /* Limit width for large screens */
+        }
+
+        .filter-container select,
+        .filter-container button {
+            padding: 8px;
+            font-size: 1rem;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            width: 70%;
+            /* Full width for select and button */
+        }
+
+        .filter-container button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+
+        .filter-container button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #ddd;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+            word-wrap: break-word;
+            /* Ensure text wraps in the cells */
+            overflow-wrap: break-word;
+            /* Prevent overflow */
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        /* Responsive styling */
+        @media (max-width: 768px) {
+            .filter-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .filter-container div {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header Section -->
+    <header>
+        ISV Tracking Sheet
+    </header>
+    <!-- Main Container -->
+    <div class="filter-container">
+        <div>
+            <label for="quarter">Quarter:</label>
+            <select id="quarter">
+                <option value="">Select Quarter</option>
+                {% for quarter in quarters %}
+                <option value="{{ quarter }}" {% if quarter==selected_quarter %}selected{% endif %}>{{ quarter }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="year">Year:</label>
+            <select id="year">
+                <option value="">Select Year</option>
+                {% for year in years %}
+                <option value="{{ year }}" {% if year==selected_year %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="button-link-container">
+            <button id="filter-button">Filter</button>
+
+            <!-- Link to the most recent ISVs -->
+            <a href="{{ url_for('most_recent_isvs') }}">Show Most Recent ISVs</a>
+        </div>
+    </div>
+    <!-- Data Table -->
+    <div id="data">
+        {% if data %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Tool Name</th>
+                    <th>Domain</th>
+                    <th>Certification Type</th>
+                    <th>Team Members</th>
+                    <th>POC</th>
+                    <th>Assessment Sheet</th>
+                    <th>Questions Doc</th>
+                    <th>ISV Start Date</th>
+                    <th>ISV End Date</th>
+                    <th>Status</th>
+                    <th>Percentage</th>
+                    <th>Comments</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    <td>{{ row.tool_name }}</td>
+                    <td>{{ row.domain }}</td>
+                    <td>{{ row.certification_type }}</td>
+                    <td>{{ row.team_members }}</td>
+                    <td>{{ row.poc }}</td>
+                    <td><a href="{{ row.assessment_sheet }}" target="_blank">Assessment Sheet</a></td>
+                    <td><a href="{{ row.questions_doc }}" target="_blank">Questions Doc</a></td>
+                    <td>{{ row.isv_start_date }}</td>
+                    <td>{{ row.isv_end_date }}</td>
+                    <td>{{ row.status }}</td>
+                    <td>{{ row.percentage }}</td>
+                    <td>{{ row.comments }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No data found.</p>
+        {% endif %}
+    </div>
+    </div>
+    <script>
+        $(document).ready(function () {
+            // Fetch data on filter button click
+            $('#filter-button').click(function () {
+                const selectedQuarter = $('#quarter').val();
+                const selectedYear = $('#year').val();
+                $.get('/isv_history_with_filter', { quarter: selectedQuarter, year: selectedYear }, function (data) {
+                    $('body').html(data); // Refresh the page with filtered data
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

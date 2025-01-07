@@ -385,6 +385,151 @@ def isv_history():
                            domains=domains,
                            statuses=statuses)
 
+@app.route("/isv_history_with_filter", methods=["GET"])
+def isv_history_with_filter():
+    selected_quarter = request.args.get("quarter")
+    selected_year = request.args.get("year")
+
+    # Base query
+    query = """
+        SELECT Sr_No, Tool_Name, Domain, Certification_Type, Version, Description, Team_Members, Year, Quarter, YearQuarter, POC, ISV_Start_Date, ISV_End_Date, Status, Percentage, Comments, Assessment_Sheet, Questions_Doc
+        FROM `wwbq-treasuredata.GBQ.ISV_Details`
+        WHERE Tool_Name IS NOT NULL
+    """
+
+    # Fetch distinct years and quarters to populate the dropdown
+    distinct_query = """
+        SELECT DISTINCT Year, Quarter FROM `wwbq-treasuredata.GBQ.ISV_Details`
+    """
+    distinct_query_job = client.query(distinct_query)
+    distinct_results = list(distinct_query_job.result())
+
+    years = sorted({row["Year"] for row in distinct_results})
+    quarters = sorted({row["Quarter"] for row in distinct_results})
+
+    # Fetch the most recent year and quarter if no selection is made
+    if not (selected_quarter or selected_year):
+        recent_query = """
+            SELECT MAX(Year) AS recent_year, MAX(Quarter) AS recent_quarter
+            FROM `wwbq-treasuredata.GBQ.ISV_Details`
+        """
+        recent_query_job = client.query(recent_query)
+        recent_results = list(recent_query_job.result())
+
+        if recent_results:
+            recent_row = recent_results[0]
+            selected_year = recent_row["recent_year"]
+            selected_quarter = recent_row["recent_quarter"]
+
+    # Add filter conditions based on user selection
+    if selected_quarter:
+        query += f" AND Quarter = '{selected_quarter}'"
+    if selected_year:
+        query += f" AND Year = {selected_year}"
+
+    try:
+        # Execute the query
+        query_job = client.query(query)
+        results = query_job.result()
+
+        # Transform results into a list of dictionaries
+        isv_details = [
+            {
+                "sr_no": row.Sr_No,
+                "tool_name": row.Tool_Name,
+                "domain": row.Domain,
+                "certification_type": row.Certification_Type,
+                "version": row.Version,
+                "description": row.Description,
+                "assessment_sheet": row.Assessment_Sheet,
+                "questions_doc": row.Questions_Doc,
+                "team_members": row.Team_Members,
+                "year": row.Year,
+                "quarter": row.Quarter,
+                "year_quarter": row.YearQuarter,
+                "poc": row.POC,
+                "isv_start_date": row.ISV_Start_Date,
+                "isv_end_date": row.ISV_End_Date,
+                "status": row.Status,
+                "percentage": row.Percentage,
+                "comments": row.Comments,
+            }
+            for row in results
+        ]
+
+        # Render template with the filtered data
+        return render_template(
+            "isv_history_with_filter.html",
+            data=isv_details,
+            years=years,
+            quarters=quarters,
+            selected_quarter=selected_quarter or "",
+            selected_year=selected_year or "",
+        )
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+
+@app.route("/most_recent_isvs", methods=["GET"])
+def most_recent_isvs():
+    # Base query to get the most recent ISVs (sorted by ISV_Start_Date descending)
+    query = """
+    SELECT Sr_No, Tool_Name, Domain, Certification_Type, Version, Description, Team_Members, Year, Quarter, YearQuarter, POC, ISV_Start_Date, ISV_End_Date, Status, Percentage, Comments, Assessment_Sheet, Questions_Doc
+    FROM `wwbq-treasuredata.GBQ.ISV_Details`
+    WHERE Tool_Name IS NOT NULL
+    ORDER BY ISV_Start_Date DESC
+    LIMIT 10
+    """
+    try:
+        # Execute the query to get the most recent ISVs
+        query_job = client.query(query)
+        results = query_job.result()
+
+        # Transform results into a list of dictionaries
+        isv_details = [
+            {
+                "sr_no": row.Sr_No,
+                "tool_name": row.Tool_Name,
+                "domain": row.Domain,
+                "certification_type": row.Certification_Type,
+                "version": row.Version,
+                "description": row.Description,
+                "assessment_sheet": row.Assessment_Sheet,
+                "questions_doc": row.Questions_Doc,
+                "team_members": row.Team_Members,
+                "year": row.Year,
+                "quarter": row.Quarter,
+                "year_quarter": row.YearQuarter,
+                "poc": row.POC,
+                "isv_start_date": row.ISV_Start_Date,
+                "isv_end_date": row.ISV_End_Date,
+                "status": row.Status,
+                "percentage": row.Percentage,
+                "comments": row.Comments,
+            }
+            for row in results
+        ]
+
+        # Fetch distinct years and quarters to populate the dropdown
+        distinct_query = """
+        SELECT DISTINCT Year, Quarter FROM `wwbq-treasuredata.GBQ.ISV_Details`
+        """
+        distinct_query_job = client.query(distinct_query)
+        distinct_results = list(distinct_query_job.result())
+        years = sorted({row["Year"] for row in distinct_results})
+        quarters = sorted({row["Quarter"] for row in distinct_results})
+
+        # Render the same template with the most recent ISVs
+        return render_template(
+            "isv_history_with_filter.html",
+            data=isv_details,
+            years=years,
+            quarters=quarters,
+            selected_quarter="",
+            selected_year="",
+        )
+    except Exception as e:
+        return f"An error occurred: {e}"
 
 if __name__ == '__main__':
     app.run(debug=True)
