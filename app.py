@@ -23,8 +23,8 @@ def index():
     # Get counts for dashboard
     counts_query = f"""
     SELECT
-        COUNT(CASE WHEN status != 'completed' THEN 1 END) as active_count,
-        COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress_count,
+        COUNT(CASE WHEN status = 'not started' THEN 1 END) as inactive_count,
+        COUNT(CASE WHEN status = 'in progress' THEN 1 END) as in_progress_count,
         COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count
     FROM `{dataset_id}.{table_id}`
     """
@@ -45,7 +45,7 @@ def index():
     recent_activities = activities_job.result()
 
     return render_template('index.html',
-                           active_count=counts_result.active_count or 0,
+                           inactive_count=counts_result.inactive_count or 0,
                            in_progress_count=counts_result.in_progress_count or 0,
                            completed_count=counts_result.completed_count or 0,
                            recent_activities=recent_activities)
