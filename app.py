@@ -235,13 +235,13 @@ def update_task_status():
         client.query(query).result()
 
         # Check if all tasks are completed
-        check_query = f"""
-        SELECT COUNT(*) as incomplete_tasks
-        FROM `{dataset_id}.isv_tasks`
-        WHERE Sr_No = {data['sr_no']}
-        AND status != 'completed'
-        """
-        result = list(client.query(check_query).result())[0]
+        # check_query = f"""
+        # SELECT COUNT(*) as incomplete_tasks
+        # FROM `{dataset_id}.isv_tasks`
+        # WHERE Sr_No = {data['sr_no']}
+        # AND status != 'completed'
+        # """
+        # result = list(client.query(check_query).result())[0]
 
         # Update ISV status if all tasks are completed
         # if result.incomplete_tasks == 0:
