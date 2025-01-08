@@ -7,7 +7,7 @@
     <title>ISV Data Filter</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        /* Set the body to take full height */
+        /* Existing Styles */
         body {
             margin-left: 20px;
             margin-right: 20px;
@@ -18,116 +18,63 @@
             flex-direction: column;
         }
 
-        /* Header section with a blue background */
         header {
             background-color: #007bff;
-            /* Blue background */
             padding: 20px 0;
             text-align: center;
             font-size: 2rem;
             font-weight: bold;
             color: white;
             width: auto;
-            /* Ensure the header takes up full width */
             box-sizing: border-box;
-            /* Ensures padding doesn't overflow */
             margin-bottom: 20px;
         }
 
-        /* Main container should have white background and content */
-        .main-container {
-            background-color: white;
-            /* White background for the content */
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-            /* Remove left and right margin for full width */
-            width: 100%;
-            /* Ensure it spans the entire width */
-            max-width: 1400px;
-            /* Max width for large screens */
-            margin-left: 10px;
-            /* Remove left margin */
-            margin-right: 10px;
-            /* Remove right margin */
-        }
-
-        /* Filter container (Quarter, Year, Filter) */
         .filter-container {
             display: flex;
-            justify-content: flex-start;
-            gap: 10px;
-            /* Reduce space between elements */
-            flex-wrap: wrap;
-            /* Allow wrapping of elements */
+            align-items: center;
+            gap: 15px;
+            flex-wrap: nowrap;
             margin-bottom: 10px;
         }
 
-        .filter-container a {
-            display: block;
-            margin-top: 5px;
-            margin-left: 0;
-            /* text-align: center; */
-            text-decoration: none;
-            white-space: nowrap;
-            width: 100px;
-            color: #007bff;
-        }
-
-        .filter-container a:hover {
-            text-decoration: underline;
-        }
-
-        .button-link-container {
-            display: flex;
-            align-items: center;
-            /* Vertically align the button and link */
-            gap: 20px;
-            /* Minimize the gap between the button and link */
-        }
-
-        .button-link-container a {
-            text-decoration: none;
-            color: #007bff;
-            font-size: 1rem;
-            margin: 0;
-            /* Remove additional margin */
-        }
-
-        .button-link-container a:hover {
-            text-decoration: underline;
-        }
-
-        .filter-container div {
-            width: 100%;
-            /* Ensure they are full width on small screens */
-            max-width: 250px;
-            /* Limit width for large screens */
-        }
-
-        .filter-container select,
-        .filter-container button {
-            padding: 8px;
+        select,
+        button {
+            padding: 8px 12px;
             font-size: 1rem;
             border-radius: 4px;
             border: 1px solid #ccc;
             background-color: #fff;
-            width: 70%;
-            /* Full width for select and button */
         }
 
-        .filter-container button {
+        button {
             background-color: #007bff;
             color: white;
             cursor: pointer;
             border: none;
         }
 
-        .filter-container button:hover {
+        button:hover {
             background-color: #0056b3;
         }
 
-        /* Table styling */
+        /* Styling Back to Homepage button */
+        .back-button {
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            padding: 8px 12px;
+            font-size: 1rem;
+            border-radius: 4px;
+            border: none;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -145,24 +92,16 @@
             padding: 10px;
             text-align: left;
             word-wrap: break-word;
-            /* Ensure text wraps in the cells */
             overflow-wrap: break-word;
-            /* Prevent overflow */
         }
 
         th {
             background-color: #f4f4f4;
         }
 
-        /* Responsive styling */
         @media (max-width: 768px) {
             .filter-container {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .filter-container div {
-                width: 100%;
+                flex-wrap: wrap;
             }
         }
     </style>
@@ -170,11 +109,14 @@
 
 <body>
     <!-- Header Section -->
-    <header>
-        ISV Tracking Sheet
-    </header>
+    <header>ISV Tracking Sheet</header>
+
     <!-- Main Container -->
     <div class="filter-container">
+        <!-- Back to Homepage Button -->
+        <a href="{{ url_for('index') }}" class="back-button">Back to Homepage</a>
+
+        <!-- Quarter Dropdown -->
         <div>
             <label for="quarter">Quarter:</label>
             <select id="quarter">
@@ -185,6 +127,8 @@
                 {% endfor %}
             </select>
         </div>
+
+        <!-- Year Dropdown -->
         <div>
             <label for="year">Year:</label>
             <select id="year">
@@ -194,13 +138,14 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="button-link-container">
-            <button id="filter-button">Filter</button>
 
-            <!-- Link to the most recent ISVs -->
-            <a href="{{ url_for('most_recent_isvs') }}">Show Most Recent ISVs</a>
-        </div>
+        <!-- Filter Button -->
+        <button id="filter-button">Filter</button>
+
+        <!-- Link to Show Most Recent ISVs -->
+        <a href="{{ url_for('most_recent_isvs') }}">Show Most Recent ISVs</a>
     </div>
+
     <!-- Data Table -->
     <div id="data">
         {% if data %}
@@ -229,8 +174,25 @@
                     <td>{{ row.certification_type }}</td>
                     <td>{{ row.team_members }}</td>
                     <td>{{ row.poc }}</td>
-                    <td><a href="{{ row.assessment_sheet }}" target="_blank">Assessment Sheet</a></td>
-                    <td><a href="{{ row.questions_doc }}" target="_blank">Questions Doc</a></td>
+                    <td>
+                        {% if row.assessment_sheet == "N/A" %}
+                        N/A
+                        {% elif row.assessment_sheet == "" or row.assessment_sheet is none or row.assessment_sheet ==
+                        "null" %}
+                        None
+                        {% else %}
+                        <a href="{{ row.assessment_sheet }}" target="_blank">Assessment Sheet</a>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if row.questions_doc == "N/A" %}
+                        N/A
+                        {% elif row.questions_doc == "" or row.questions_doc is none or row.questions_doc == "null" %}
+                        None
+                        {% else %}
+                        <a href="{{ row.questions_doc }}" target="_blank">Questions Doc</a>
+                        {% endif %}
+                    </td>
                     <td>{{ row.isv_start_date }}</td>
                     <td>{{ row.isv_end_date }}</td>
                     <td>{{ row.status }}</td>
@@ -244,7 +206,7 @@
         <p>No data found.</p>
         {% endif %}
     </div>
-    </div>
+
     <script>
         $(document).ready(function () {
             // Fetch data on filter button click

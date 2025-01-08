@@ -1,35 +1,40 @@
-<!-- templates/index.html -->
 {% extends "base.html" %}
 {% block title %}Home{% endblock %}
 
 {% block content %}
 <div class="min-h-screen">
-    <!-- Hero Section -->
+    <!-- Hero Section with Logo -->
     <div class="bg-white rounded-lg shadow-md p-8 mb-8">
         <div class="max-w-4xl mx-auto text-center">
-            <h1 class="text-4xl font-bold text-gray-900 mb-4">ISV Tracking System</h1>
-            <p class="text-xl text-gray-600 mb-8">Efficiently manage and track your Independent Software Vendor partnerships</p>
-            <a href="{{ url_for('add_isv') }}" class="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out">
-                Add New ISV
-            </a>
+            <div class="flex justify-center mb-6">
+                <img src="/static/persistent_logo.png" alt="Persistent Systems" class="h-16 object-contain">
+            </div>
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">Welcome to Google BigQuery Connector Validation Suite</h1>
+            <p class="text-xl text-gray-600">Efficiently track and manage your Independent Software Vendor partnerships</p>
         </div>
     </div>
 
     <!-- Quick Stats -->
-    <div class="grid md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6">
+    <div class="grid md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6 transform hover:scale-105 transition-transform duration-300">
             <div class="text-center">
-                <h3 class="text-lg font-semibold text-white-900 mb-2">Inactive ISVs</h3>
-                <p class="text-3xl font-bold text-grey-600">{{ inactive_count }}</p>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Total Domains</h3>
+                <p class="text-3xl font-bold text-blue-600">{{ domain_count }}</p>
             </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="bg-white rounded-lg shadow-md p-6 transform hover:scale-105 transition-transform duration-300">
+            <div class="text-center">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Inactive ISVs</h3>
+                <p class="text-3xl font-bold text-gray-600">{{ inactive_count }}</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6 transform hover:scale-105 transition-transform duration-300">
             <div class="text-center">
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">In Progress</h3>
                 <p class="text-3xl font-bold text-yellow-600">{{ in_progress_count }}</p>
             </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="bg-white rounded-lg shadow-md p-6 transform hover:scale-105 transition-transform duration-300">
             <div class="text-center">
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">Completed</h3>
                 <p class="text-3xl font-bold text-green-600">{{ completed_count }}</p>
@@ -37,58 +42,59 @@
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="grid md:grid-cols-2 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-            <div class="space-y-4">
-                <a href="{{ url_for('add_isv') }}" class="block p-4 border rounded-lg hover:bg-gray-50 transition duration-300">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <h3 class="text-lg font-medium text-gray-900">Add New ISV</h3>
-                            <p class="text-gray-600">Register a new ISV partnership</p>
-                        </div>
-                    </div>
-                </a>
-                <a href="{{ url_for('current_isvs') }}" class="block p-4 border rounded-lg hover:bg-gray-50 transition duration-300">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <h3 class="text-lg font-medium text-gray-900">View Current ISVs</h3>
-                            <p class="text-gray-600">Check active partnerships</p>
-                        </div>
-                    </div>
-                </a>
+    <!-- Charts Section -->
+    <div class="space-y-8">
+        <!-- First Row of Charts -->
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Quarterly ISV Distribution</h2>
+                <img src="data:image/png;base64,{{ quarter_chart }}" alt="Quarter Chart" class="w-full">
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">ISV Distribution by Year</h2>
+                <img src="data:image/png;base64,{{ pie_chart }}" alt="Years Chart" class="w-full">
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
-            <div class="space-y-4">
-                {% for activity in recent_activities %}
-                <div class="border-b last:border-b-0 pb-4 last:pb-0">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <span class="inline-block h-2 w-2 rounded-full {% if activity.status == 'completed' %}bg-green-600{% elif activity.status == 'in progress' %}bg-yellow-600{% else %}bg-gray-600{% endif %}"></span>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-900">{{ activity.isv_name }}</p>
-                            <p class="text-sm text-gray-600">{{ activity.status }} - {{ activity.updated_at }}</p>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
+        <!-- Second Row of Charts -->
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Quarterly Growth Rate</h2>
+                <img src="data:image/png;base64,{{ line_chart_qtr }}" alt="Quarter Growth Chart" class="w-full">
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Top Domains</h2>
+                <img src="data:image/png;base64,{{ hor_chart_dom }}" alt="Top Domain Chart" class="w-full">
             </div>
         </div>
+
+        <!-- Full Width Domain Chart -->
+        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">ISV Distribution by Domain</h2>
+            <img src="data:image/png;base64,{{ domain_chart }}" alt="Domain Chart" class="w-full">
+        </div>
     </div>
+
+<!--    &lt;!&ndash; Recent Activity &ndash;&gt;-->
+<!--    <div class="mt-8">-->
+<!--        <div class="bg-white rounded-lg shadow-md p-6">-->
+<!--            <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>-->
+<!--            <div class="space-y-4">-->
+<!--                {% for activity in recent_activities %}-->
+<!--                <div class="border-b last:border-b-0 pb-4 last:pb-0">-->
+<!--                    <div class="flex items-center">-->
+<!--                        <div class="flex-shrink-0">-->
+<!--                            <span class="inline-block h-2 w-2 rounded-full {% if activity.status == 'completed' %}bg-green-600{% elif activity.status == 'in progress' %}bg-yellow-600{% else %}bg-gray-600{% endif %}"></span>-->
+<!--                        </div>-->
+<!--                        <div class="ml-4">-->
+<!--                            <p class="text-sm font-medium text-gray-900">{{ activity.isv_name }}</p>-->
+<!--                            <p class="text-sm text-gray-600">{{ activity.status }} - {{ activity.updated_at }}</p>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                {% endfor %}-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
 </div>
 {% endblock %}

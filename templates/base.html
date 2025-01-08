@@ -64,11 +64,11 @@
                     <a href="{{ url_for('index') }}">GBQ App</a>
                 </div>
                 <div class="hidden md:flex space-x-8">
-                    <a href="{{ url_for('dashboards') }}" class="hover:text-blue-200">Dashboard</a>
+<!--                    <a href="{{ url_for('dashboards') }}" class="hover:text-blue-200">Dashboard</a>-->
 
                     <div class="dropdown">
                         <button class="dropdown-button" onclick="toggleDropdown(event)">
-                            ISV Analysis Dashboard
+                            Dashboard
                             <svg class="inline-block ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                             </svg>
@@ -81,9 +81,10 @@
                         </div>
                     </div>
 
+                    <a href="{{ url_for('index') }}" class="hover:text-blue-200">ISV Details</a>
+                    <a href="{{ url_for('tracker') }}" class="hover:text-blue-200">ISV Tracker</a>
                     <a href="{{ url_for('add_isv') }}" class="hover:text-blue-200">Register New Partnership</a>
-                    <a href="{{ url_for('current_isvs') }}" class="hover:text-blue-200">Current ISV Tasks</a>
-                    <a href="{{ url_for('isv_history_with_filter') }}" class="hover:text-blue-200">ISV History</a>
+                    <a href="{{ url_for('logins') }}" class="hover:text-blue-200">Login</a>
                 </div>
             </div>
         </div>

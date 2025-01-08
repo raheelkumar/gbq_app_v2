@@ -4,6 +4,8 @@ from google.cloud import bigquery
 import pandas as pd
 from datetime import datetime
 from google.oauth2 import service_account
+
+from domains import DOMAIN_CHOICES
 from forms import ISVForm
 import os
 import matplotlib
@@ -13,6 +15,7 @@ import io
 import base64
 from matplotlib.figure import Figure
 import textwrap
+import domains
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -38,6 +41,16 @@ def index():
     counts_job = client.query(counts_query)
     counts_result = next(counts_job.result())
 
+    # Get Domain count
+    query = """SELECT
+  COUNT(DISTINCT Domain) AS total_domains
+FROM
+  `wwbq-treasuredata.GBQ.ISV_Details`
+WHERE
+  Domain NOT LIKE '%+%';"""
+    query_job = client.query(query)
+    domain_results = query_job.result()
+
     # Get recent activities
     activities_query = f"""
     SELECT
@@ -51,12 +64,58 @@ def index():
     activities_job = client.query(activities_query)
     recent_activities = activities_job.result()
 
+    domain_chart = generate_domain_chart()
+    quarter_chart = generate_quarter_chart()
+    pie_chart = generate_pie_chart()
+    line_chart_qtr = generate_qtr_growth_chart()
+    hor_chart_dom = generate_top_domain_chart()
+    total_domains = get_dist_domains_count()
+
     return render_template('index.html',
                            inactive_count=counts_result.inactive_count or 0,
                            in_progress_count=counts_result.in_progress_count or 0,
                            completed_count=counts_result.completed_count or 0,
-                           recent_activities=recent_activities)
+                           recent_activities=recent_activities,
+                           domain_count=len(DOMAIN_CHOICES) or 0,
+                           domain_chart=domain_chart,
+                           quarter_chart=quarter_chart,
+                           pie_chart=pie_chart,
+                           line_chart_qtr=line_chart_qtr,
+                           hor_chart_dom=hor_chart_dom)
 
+
+
+@app.route('/tracker')
+def tracker():
+    # Get counts for dashboard
+    counts_query = f"""
+    SELECT
+        COUNT(CASE WHEN status = 'not started' THEN 1 END) as inactive_count,
+        COUNT(CASE WHEN status = 'in progress' THEN 1 END) as in_progress_count,
+        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count
+    FROM `{dataset_id}.{table_id}`
+    """
+    counts_job = client.query(counts_query)
+    counts_result = next(counts_job.result())
+
+    # Get recent activities
+    activities_query = f"""
+    SELECT
+        isv_name,
+        status,
+        created_at as updated_at
+    FROM `{dataset_id}.{table_id}`
+    ORDER BY created_at DESC
+    LIMIT 5
+    """
+    activities_job = client.query(activities_query)
+    recent_activities = activities_job.result()
+
+    return render_template('tracker.html',
+                           inactive_count=counts_result.inactive_count or 0,
+                           in_progress_count=counts_result.in_progress_count or 0,
+                           completed_count=counts_result.completed_count or 0,
+                           recent_activities=recent_activities)
 
 @app.route('/check_isv_name', methods=['POST'])
 def check_isv_name():
@@ -406,27 +465,26 @@ def isv_history_with_filter():
 
     # Fetch distinct years and quarters to populate the dropdown
     distinct_query = """
-        SELECT DISTINCT Year, Quarter FROM `wwbq-treasuredata.GBQ.ISV_Details`
+        SELECT DISTINCT Year, Quarter
+        FROM `wwbq-treasuredata.GBQ.ISV_Details`
     """
     distinct_query_job = client.query(distinct_query)
     distinct_results = list(distinct_query_job.result())
 
-    years = sorted({row["Year"] for row in distinct_results})
+    # Ensure `Year` is treated as string and include the current year if not present
+    years = sorted({str(row["Year"]) for row in distinct_results})
+    current_year = str(datetime.now().year)
+    if current_year not in years:
+        years.append(current_year)
+    years = sorted(years)
+
     quarters = sorted({row["Quarter"] for row in distinct_results})
 
-    # Fetch the most recent year and quarter if no selection is made
-    if not (selected_quarter or selected_year):
-        recent_query = """
-            SELECT MAX(Year) AS recent_year, MAX(Quarter) AS recent_quarter
-            FROM `wwbq-treasuredata.GBQ.ISV_Details`
-        """
-        recent_query_job = client.query(recent_query)
-        recent_results = list(recent_query_job.result())
-
-        if recent_results:
-            recent_row = recent_results[0]
-            selected_year = recent_row["recent_year"]
-            selected_quarter = recent_row["recent_quarter"]
+    # Set default selection to current year and quarter if no selection is made
+    if not selected_quarter:
+        selected_quarter = f"Q{((datetime.now().month - 1) // 3) + 1}"
+    if not selected_year:
+        selected_year = current_year
 
     # Add filter conditions based on user selection
     if selected_quarter:
@@ -470,8 +528,8 @@ def isv_history_with_filter():
             data=isv_details,
             years=years,
             quarters=quarters,
-            selected_quarter=selected_quarter or "",
-            selected_year=selected_year or "",
+            selected_quarter=selected_quarter,
+            selected_year=selected_year,
         )
     except Exception as e:
         return f"An error occurred: {e}"
@@ -915,6 +973,11 @@ def get_quarters():
     query = "SELECT DISTINCT Quarter FROM `wwbq-treasuredata.GBQ.ISV_Details`"
     results = fetch_isvs(query)
     return [row['Quarter'] for row in results]
+
+@app.route('/logins')
+def logins():
+    #login logic
+    return render_template('login.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
