@@ -1,0 +1,286 @@
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+/*
+header {
+    background-color: #0056b3;
+    color: #fff;
+    padding: 10px 20px;
+}*/
+
+header {
+    text-align: center;
+    background: #4CAF50;
+    color: white;
+    padding: 10px 0;
+}
+
+
+nav ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+
+}
+
+nav ul li {
+    margin: 0 15px;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+nav{
+    display:flex;
+    justify-content: center;
+    background-color: ;
+    padding: 10px;
+}
+
+nav a {
+    display: inline-block;
+    text-decoration:none;
+    color: #4CAF50;
+    padding: 10px 20px;
+    border: 1px solid ;
+    border-radius: 5px;
+    background-color: ;
+    transition: background-color 0.3s ease;
+}
+
+nav a:hover{
+    background-color: green;
+    color: white;
+    }
+
+table {
+    width: 80%;
+    margin: 20px auto;
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+}
+
+th{
+    padding: 10px;
+    text-align: center;
+}
+
+td {
+    padding: 10px;
+    text-align: left;
+}
+
+.button-container{
+    display: flex;
+    justify-content: flex-end;
+}
+
+.button1-container{
+    display: flex;
+
+}
+
+.home-button{
+    display: inline-block;
+    text-decoration:none;
+    color: #4CAF50;
+    padding: 10px 20px;
+    border: 1px solid ;
+    border-radius: 5px;
+    background-color: ;
+    transition: background-color 0.3s ease;
+}
+
+.home-button:hover{
+    background-color: green;
+    color: white;
+    text-decoration:none;
+    }
+
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+}
+
+.container-chart {
+    border: 1px solid ;
+    border-radius: 8px;
+}
+
+h1 {
+    color: #333;
+}
+
+.banner-container{
+    display: flex;
+    text-decoration:none;
+    justify-content: space-between;
+    gap: 20px;
+
+}
+
+.banner {
+    white-space: nowrap;
+    display: inline-block;
+    text-decoration:none;
+    background-color: white;
+    color: green;
+    padding: 20px;
+    margin: 20px 0;
+    border: 1px solid ;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.banner:hover {
+    background-color: green;
+    color: white;
+}
+
+.banner h2 {
+    margin: 0;
+    text-decoration:none;
+}
+
+.isv-list {
+    margin-top: 30px;
+    text-align: left;
+    text-decoration:none;
+}
+
+.isv-list h3 {
+    color: #333;
+}
+
+.isv-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.isv-list ul li {
+    background-color: #f1f1f1;
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.menu-container {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 1000; /* Ensure the menu is above other content */
+}
+
+.menu-icon {
+    font-size: 30px;
+    cursor: pointer;
+    color: #333;
+    background-color: #fff;
+    padding: 10px;
+    border: 1px solid;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+.menu {
+    display: none; /* Hide the menu by default */
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    position: absolute;
+    left: 0;
+    top: 0; /* Position the menu just below the hamburger icon */
+    background-color: #333;
+    border-radius: 5px;
+    width: 200px;
+}
+
+.menu li {
+    border-bottom: 1px solid #444;
+}
+
+.menu li:last-child {
+    border-bottom: none;
+}
+
+.menu a {
+    display: block;
+    padding: 10px;
+    color: white;
+    text-decoration: none;
+    text-align: center;
+}
+
+.menu a:hover {
+    background-color: #575757;
+    text-decoration: underline;
+}
+
+/* Media Query: For smaller screens */
+@media (max-width: 768px) {
+    .menu-container {
+        top: 10px;
+        right: 10px;
+    }
+
+    .menu {
+        width: 100%;
+    }
+}
+
+footer {
+    background-color: #0056b3;
+    color: #fff;
+    text-align: center;
+    padding: 10px 0;
+    margin-top: 20px;
+}
+
+/*
+a {
+    text-decoration: none;
+    color: #007BFF;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+header {
+    background-color: #0056b3;
+    color: #fff;
+    padding: 10px 20px;
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: right;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+}
+
+.nav-links li a {
+    color: #fff;
+    font-weight: bold;
+}
+*/

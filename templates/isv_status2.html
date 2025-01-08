@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}ISVs - {{ status }}{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow-md rounded-lg p-6">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">ISVs with Status: {{ status }}</h1>
+    
+    {% if isv_details %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ISV Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team Members</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year Quarter</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for isv in isv_details %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ isv.Tool_Name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ isv.Domain }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ isv.ISV_Start_Date }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ isv.ISV_End_Date }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ isv.Team_Members }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ isv.YearQuarter }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-gray-600">No ISVs found for the selected status.</p>
+    {% endif %}
+</div>
+{% endblock %}

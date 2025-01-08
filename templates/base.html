@@ -4,21 +4,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ISV Tracker - {% block title %}{% endblock %}</title>
+    <title>GBQ App - {% block title %}{% endblock %}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+        }
+
+        .dropdown-content a {
+            color: #1a202c;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f2f2f2;
+        }
+
+        .dropdown:hover .dropdown-content,
+        .dropdown.active .dropdown-content {
+            display: block;
+        }
+
+        .dropdown-button {
+            background: none;
+            border: none;
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .dropdown-button:hover {
+            color: #90cdf4;
+        }
+    </style>
 </head>
 <body class="bg-gray-100">
     <nav class="bg-blue-600 text-white shadow-lg">
         <div class="container mx-auto px-6 py-3">
             <div class="flex items-center justify-between">
                 <div class="text-xl font-semibold">
-                    <a href="{{ url_for('index') }}">ISV Tracker</a>
+                    <a href="{{ url_for('index') }}">GBQ App</a>
                 </div>
                 <div class="hidden md:flex space-x-8">
-                    <a href="{{ url_for('add_isv') }}" class="hover:text-blue-200">Register a new Partnership</a>
+                    <a href="{{ url_for('dashboards') }}" class="hover:text-blue-200">Dashboard</a>
+
+                    <div class="dropdown">
+                        <button class="dropdown-button" onclick="toggleDropdown(event)">
+                            ISV Analysis Dashboard
+                            <svg class="inline-block ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="{{ url_for('list_by_domain') }}">ISVs by Domain</a>
+                            <a href="{{ url_for('list_by_year_quarter') }}">ISVs by Year/Quarter</a>
+                            <a href="{{ url_for('index_new') }}">Best ISVs by Category</a>
+                            <a href="{{ url_for('index1') }}">Best ISVs by Year & Quarter</a>
+                        </div>
+                    </div>
+
+                    <a href="{{ url_for('add_isv') }}" class="hover:text-blue-200">Register New Partnership</a>
                     <a href="{{ url_for('current_isvs') }}" class="hover:text-blue-200">Current ISV Tasks</a>
-<!--                    <a href="{{ url_for('isv_history') }}" class="hover:text-blue-200">ISV History</a>-->
                     <a href="{{ url_for('isv_history_with_filter') }}" class="hover:text-blue-200">ISV History</a>
                 </div>
             </div>
@@ -39,6 +103,40 @@
         {% block content %}{% endblock %}
     </div>
 
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdowns = document.querySelectorAll('.dropdown');
+            dropdowns.forEach(function(dropdown) {
+                if (!dropdown.contains(event.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+        });
+
+        // Toggle dropdown on click
+        function toggleDropdown(event) {
+            event.stopPropagation();
+            const dropdown = event.currentTarget.parentElement;
+            const wasActive = dropdown.classList.contains('active');
+
+            // Close all dropdowns
+            document.querySelectorAll('.dropdown').forEach(function(d) {
+                d.classList.remove('active');
+            });
+
+            // Toggle the clicked dropdown
+            if (!wasActive) {
+                dropdown.classList.add('active');
+            }
+        }
+
+        // Prevent closing when clicking inside dropdown
+        document.querySelectorAll('.dropdown-content').forEach(function(content) {
+            content.addEventListener('click', function(event) {
+                event.stopPropagation();
+            });
+        });
+    </script>
 </body>
 </html>

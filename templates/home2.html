@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISV Validation Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script>// Function to fetch ISV names and display them dynamically
+    let closeTimer;
+    function fetchISVNames(status) {
+            fetch(`/isv_status/${status}`)
+                .then(response => response.json())
+                .then(data => {
+                    const displayArea = document.getElementById('isv-names');
+                    displayArea.innerHTML = `<h3>ISVs with status: ${status}</h3>`;
+                    if (data.length > 0) {
+                        const list = document.createElement('ul');
+                        data.forEach(name => {
+                            const listItem = document.createElement('li');
+                            listItem.textContent = name;
+                            list.appendChild(listItem);
+                        });
+                        displayArea.appendChild(list);
+                    } else {
+                        displayArea.innerHTML += '<p>No ISVs found.</p>';
+                    }
+                });
+        }
+        function toggleMenu(event){
+        var menu = document.getElementById("menu");
+        var menuIcon = event.target;
+        var iconPosition = menuIcon.getBoundingClientRect();
+        menu.style.top= (iconPosition.bottom + window.scrollY)+ 'px' ;
+        menu.style.left = iconPosition.left + 'px';
+        if (menu.style.display ==="block"){
+            menu.style.display = "none";
+        } else{
+            menu.style.display = "block";
+        }
+        }
+        function closeMenu(){
+        var menu = document.getElementById("menu");
+        menu.style.display = "none";
+        }
+        function startCloseMenuTimer(){
+        closeTimer = setTimeout(function(){
+            var menu = document.getElementById("menu");
+            menu.style.display = "none";}, 200);
+        }
+        function cancelCloseMenuTimer(){
+        clearTimeout(closeTimer);
+        }
+        document.getElementById("menu").addEventListener("mouseenter", function(){
+            cancelCloseMenuTimer();
+        });
+    </script>
+</head>
+<body>
+    <header>
+
+        <div class="header-container">
+<!--            <h1>GBQ Program</h1>-->
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="/">Dashboard</a></li>
+                    <li><a href="#isv-details">ISV Details</a></li>
+                    <li><a href="{{ url_for('current_isvs') }}">ISV Tracker</a></li>
+                    <li><a href="#register">Register New Partnership</a></li>
+                    <li><a href="#login">Login</a></li>
+                </ul>
+            </nav>
+        </div>
+</header>
+    <div class="header1">
+        <h1>Welcome to Google BigQuery Validation Program</h1>
+        <div class="menu-container">
+            <div class="menu-icon" onclick="toggleMenu(event)">&#9776;</div>
+        </div>
+    <img src="data:image/png;base64,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" alt="ISV Banner">
+    </div>
+    <main>
+<!--        <nav>-->
+            <ul id ="menu" class="menu" onmouseleave="startCloseMenuTimer()" onmouseenter="cancelCloseMenuTimer()">
+<!--                <li><a href="/list_isvs" onclick="closeMenu()">ISV List</a></li>-->
+                <li><a href="/list_by_domain" onclick="closeMenu()">ISVs by Domains</a></li>
+                <li><a href="/list_by_year_quarter" onclick="closeMenu()">ISVs by Year and Quarter</a></li>
+                <li><a href="/best_isv_by_domain" onclick="closeMenu()">Best ISVs by Category</a></li>
+                <li><a href="/best_isv_by_yr_qtr" onclick="closeMenu()">Best ISVs by Year & Quarter</a></li>
+            </ul>
+<!--        </nav>-->
+
+
+
+    </main>
+
+<!--<h3>ISV Counts</h3>-->
+<!--    <nav>-->
+    <div class ="container">
+<!--        <div class="banner" onclick="fetchISVNames('In Progress')">-->
+        <div class="banner-container">
+        <div class="banner">
+            <a href="/list_by_domain">
+<!--            <h2>ISVs Completed</h2>-->
+            <p>Total Domains: {{ total_domains }}</p>
+            </a>
+        </div>
+        <div class="banner">
+            <a href="/isv_status/In Progress">
+<!--            <h2>ISVs In Progress</h2>-->
+            <p>ISVs In-Progress: {{isv_counts.get('In Progress', 0) }}</p>
+            </a>
+        </div>
+<!--        <div class="banner" onclick="fetchISVNames('Completed')">-->
+            <div class="banner">
+            <a href="/isv_status/Completed">
+<!--            <h2>ISVs Completed</h2>-->
+            <p>ISVs Completed: {{isv_counts.get('Completed', 0) }}</p>
+            </a>
+        </div>
+        <div id="isv-names" class="isv-list"></div>
+        </div>
+    </div>
+<!--    </nav>-->
+
+<!--charts-->
+
+    <div class="button1-container">
+    <div class="container-chart">
+<!--        <h4>ISV Count by Quarter</h4>-->
+        <img src="data:image/png;base64,{{ quarter_chart }}" alt="Quarter Chart">
+    </div>
+    <div class="container-chart">
+<!--        <h4>ISV Count by Years</h4>-->
+        <img src="data:image/png;base64,{{ pie_chart }}" alt="Years Chart">
+    </div>
+    </div>
+    <div class="button1-container">
+    <div class="container-chart">
+    <img src="data:image/png;base64,{{ line_chart_qtr }}" alt="Quarter Growth Chart">
+    </div>
+    <div class="container-chart">
+    <img src="data:image/png;base64,{{ hor_chart_dom }}" alt="Top Domain Chart">
+    </div>
+    </div>
+    <div class="container-chart">
+<!--    <h4>ISV Count by Domain</h4>-->
+    <img src="data:image/png;base64,{{ domain_chart }}" alt="Domain Chart">
+    </div>
+
+<footer>
+        <p>&copy; 2025 GBQ Program. All rights reserved.</p>
+</footer>
+
+</body>
+</html>

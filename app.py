@@ -6,6 +6,13 @@ from datetime import datetime
 from google.oauth2 import service_account
 from forms import ISVForm
 import os
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import io
+import base64
+from matplotlib.figure import Figure
+import textwrap
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -530,6 +537,384 @@ def most_recent_isvs():
         )
     except Exception as e:
         return f"An error occurred: {e}"
+
+
+#Krishnakanth's Code
+@app.route('/dashboards')
+def dashboards():  # Renamed from home() to match the route
+    query = """Select status, count(*) as count FROM `wwbq-treasuredata.GBQ.ISV_Details` GROUP BY status"""
+    query_job = client.query(query)
+    results = query_job.result()
+    isv_counts = {row.status: row.count for row in results}
+    domain_chart = generate_domain_chart()
+    quarter_chart = generate_quarter_chart()
+    pie_chart = generate_pie_chart()
+    line_chart_qtr = generate_qtr_growth_chart()
+    hor_chart_dom = generate_top_domain_chart()
+    total_domains = get_dist_domains_count()
+    return render_template('home2.html',
+                         domain_chart=domain_chart,
+                         quarter_chart=quarter_chart,
+                         isv_counts=isv_counts,
+                         pie_chart=pie_chart,
+                         total_domains=total_domains,
+                         line_chart_qtr=line_chart_qtr,
+                         hor_chart_dom=hor_chart_dom)
+
+
+@app.route('/isv_status/<status>')
+def isv_status(status):
+    query = f"""Select Tool_Name, Domain, Team_Members, ISV_Start_Date, ISV_End_Date, YearQuarter FROM `wwbq-treasuredata.GBQ.ISV_Details` WHERE status = @status ORDER BY YearQuarter DESC, ISV_Start_Date DESC, Domain"""
+    job_config = bigquery.QueryJobConfig(
+        query_parameters =[bigquery.ScalarQueryParameter("status", "STRING", status)]
+    )
+    query_job = client.query(query, job_config=job_config)
+    results = query_job.result()
+    isv_details =[{
+        "Tool_Name": row.Tool_Name,
+        "Domain": row.Domain,
+        "Team_Members": row.Team_Members,
+        "ISV_Start_Date": row.ISV_Start_Date,
+        "ISV_End_Date": row.ISV_End_Date,
+        "YearQuarter": row.YearQuarter,
+    }
+    for row in results]
+    return render_template('isv_status2.html', status=status, isv_details=isv_details)
+
+@app.route('/list_isvs')
+def list_isvs():
+    query = "SELECT Tool_Name FROM `wwbq-treasuredata.GBQ.ISV_Details`"
+    isvs = fetch_isvs(query)
+    return render_template('list_isvs2.html', isvs=isvs)
+
+
+@app.route('/list_by_domain', methods=['GET', 'POST'])
+def list_by_domain():
+    if request.method == 'POST':
+        domain = request.form['domain']
+        query = f"""
+        SELECT Tool_Name FROM `wwbq-treasuredata.GBQ.ISV_Details` WHERE domain = '{domain}'
+        """
+        isvs = fetch_isvs(query)
+        return render_template('list_by_domain2.html', domains=get_domains(), isvs=isvs, selected_domain=domain)
+    return render_template('list_by_domain2.html', domains=get_domains(), isvs=None)
+
+
+
+# List ISVs by Year and Quarter route
+@app.route("/list_by_year_quarter", methods=["GET", "POST"])
+def list_by_year_quarter():
+    # Fetch years and quarters from BigQuery
+    query_year_quarter = """
+    SELECT DISTINCT year, quarter FROM `wwbq-treasuredata.GBQ.ISV_Details`
+    """
+    results = client.query(query_year_quarter).result()
+    years, quarters = set(), set()
+    for row in results:
+        years.add(row.year)
+        quarters.add(row.quarter)
+
+    isv_data = None
+    year, quarter = None, None
+
+    # Fetch ISVs based on year and quarter selection
+    if request.method == "POST":
+        year = request.form.get("year")
+        quarter = request.form.get("quarter")
+        query_isvs = f"""
+        SELECT Tool_Name, Domain 
+        FROM `wwbq-treasuredata.GBQ.ISV_DETAILS_TEST` 
+        WHERE year = {year} AND quarter = '{quarter}'
+        """
+        isv_data = client.query(query_isvs).result()
+        return render_template('list_by_year_qtr2.html', years=sorted(years),
+        quarters=sorted(quarters),
+        isv_data=isv_data,
+        year=year,
+        quarter=quarter,)
+
+
+    return render_template(
+        "list_by_year_qtr2.html",
+        years=sorted(years),
+        quarters=sorted(quarters),
+        isv_data=isv_data,
+        year=year,
+        quarter=quarter,
+        # domain_chart=domain_chart,
+        # quarter_chart=quarter_chart,
+    )
+
+
+# Helper function to generate domain chart
+def generate_domain_chart():
+    query = """
+    SELECT domain, COUNT(*) AS isv_count
+    FROM `wwbq-treasuredata.GBQ.ISV_Details`
+    GROUP BY domain
+    """
+    results = client.query(query).result()
+    domains, counts = [], []
+    for row in results:
+        domains.append(row.domain)
+        counts.append(row.isv_count)
+
+    plt.figure(figsize=(12, 6))
+    plt.bar(domains, counts, color="lightgreen")
+    plt.xlabel("domain")
+    plt.ylabel("isv_count")
+    plt.title("ISV Count by Domain")
+    plt.xticks(rotation=75, ha='right')
+    plt.tight_layout()
+#    plt.grid(axis='y')
+
+    img = io.BytesIO()
+    plt.savefig(img, format="png")
+    img.seek(0)
+    chart = base64.b64encode(img.getvalue()).decode()
+    img.close()
+    # chart_path = "static/domain_chart.png"
+    # plt.savefig(chart_path)
+    plt.close()
+    return chart
+
+
+# Helper function to generate quarter chart
+def generate_quarter_chart():
+    query = """
+    SELECT CAST(year as INT64) as year, quarter, COUNT(*) AS isv_count
+    FROM `wwbq-treasuredata.GBQ.ISV_Details`
+    GROUP BY year, quarter ORDER BY year, quarter
+    """
+    results = client.query(query).result()
+
+    data = {}
+    years =set()
+    quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+    for row in results:
+        year = row.year
+        quarter = row.quarter
+        count = row.isv_count
+        if quarter not in data:
+            data[quarter] = {}
+        data[quarter][year] = count
+        years.add(year)
+
+    years =sorted(years)
+    x = range(len(years))
+    bar_width =0.2
+
+    fig = Figure(figsize=(7, 5))
+    ax = fig.add_subplot(111)
+
+    for i, quarter in enumerate(quarters):
+        values = [data.get(quarter, {}).get(year, 0) for year in years]
+        ax.bar([p + bar_width * i for p in x], values, bar_width, label=quarter)
+
+    ax.set_title('ISV Count by Quarter')
+    ax.set_xlabel('Years')
+    ax.set_ylabel('ISV Count')
+    ax.set_xticks([p + bar_width * len(quarters) / 2 for p in x])
+    ax.set_xticklabels(years)
+    ax.legend(title='Quarters')
+
+    img = io.BytesIO()
+    # plt.savefig(img, format="png")
+    fig.savefig(img, format="png")
+    img.seek(0)
+    chart = base64.b64encode(img.getvalue()).decode()
+    img.close()
+    # chart_path = "static/quarter_chart.png"
+    # plt.savefig(chart_path)
+    plt.close()
+    return chart
+
+def generate_pie_chart():
+    query = """
+    SELECT Year as year, COUNT(*) AS isv_count
+    FROM `wwbq-treasuredata.GBQ.ISV_Details`
+    GROUP BY year ORDER BY year
+    """
+    results = client.query(query).result()
+    years, counts = [], []
+    for row in results:
+        years.append(str(int(row.year)))
+        counts.append(row.isv_count)
+
+    # fig = Figure()
+    # ax= fig.subplots()
+    fig, ax = plt.subplots()
+    ax.pie(
+        counts,
+        labels=years,
+        autopct='%1.1f%%',
+        startangle=90,
+        colors=['#FF9999', '#66B2FF', '#99FF99', '#FFCC99', '#C299FF'],
+    )
+    ax.set_title("ISV by Years")
+
+    img = io.BytesIO()
+    plt.savefig(img, format="png")
+    img.seek(0)
+    chart = base64.b64encode(img.getvalue()).decode('utf8')
+    img.close()
+    # chart_path = "static/domain_chart.png"
+    # plt.savefig(chart_path)
+    plt.close()
+    return chart
+
+# Fetch ISVs from BigQuery
+def fetch_isvs(query):
+    query_job = client.query(query)
+    results = query_job.result()
+    return [dict(row) for row in results]
+
+def generate_qtr_growth_chart():
+    query = """
+    SELECT CONCAT(CAST(year as STRING), '-', quarter) AS period, Count(*) as tool_count 
+    FROM `wwbq-treasuredata.GBQ.ISV_Details` 
+    GROUP BY year, quarter ORDER BY year, quarter;
+    """
+    data =fetch_isvs(query)
+    periods = [row['period'] for row in data]
+    counts = [row['tool_count'] for row in data]
+
+    plt.figure(figsize=(7, 6))
+    plt.plot(periods, counts, marker='o', label="Tools Added")
+    plt.title("Quarterly Growth Rate")
+    plt.xlabel("Year-Quarter")
+    plt.ylabel("ISV Count")
+    plt.xticks(rotation=51, ha='right')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.legend()
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    chart = base64.b64encode(buf.getvalue()).decode('utf8')
+    plt.close()
+    return chart
+
+def generate_top_domain_chart():
+    query = """
+    Select Domain as domain, Count(*) as tool_count FROM `wwbq-treasuredata.GBQ.ISV_Details` 
+    GROUP BY domain ORDER BY tool_count DESC limit 10;
+    """
+    data =fetch_isvs(query)
+    domains = [row['domain'] for row in data]
+    counts = [row['tool_count'] for row in data]
+
+    wrapped_domains=[textwrap.fill(domain, width=20) for domain in domains]
+
+    plt.figure(figsize=(7, 6))
+    plt.barh(wrapped_domains, counts, color='lightblue')
+    plt.title("Top domains by tool")
+    plt.xlabel("tool_count")
+    plt.ylabel("Domains")
+#    plt.xticks(rotation=45, ha='right')
+    plt.gca().invert_yaxis()
+    plt.grid(axis='x', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+#    plt.legend()
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    chart = base64.b64encode(buf.getvalue()).decode('utf8')
+    plt.close()
+    return chart
+
+# Function to execute SQL query and return results as a list of dictionaries
+def execute_query(query):
+    client = bigquery.Client()
+    query_job = client.query(query)
+    results = query_job.result()
+    return [dict(row) for row in results]
+    # return [{"ISV_Name": row.ISV_Name, "Domain": row.Domain} for row in results]
+
+@app.route('/best_isv_by_domain')
+def index_new():
+    query = """ SELECT
+  a.tool AS Tool_Name,
+  a.category AS Domain
+FROM
+  wwbq-treasuredata.GBQ.BEST_ISV_DETAILS a,
+  (
+  SELECT
+    category,
+    MIN(Percentage_Of_Failure) AS min_fail
+  FROM
+    wwbq-treasuredata.GBQ.BEST_ISV_DETAILS
+  GROUP BY
+    category) b
+WHERE
+  a.category=b.category
+  AND a.Percentage_Of_Failure=b.min_fail
+ORDER BY
+  a.category; """
+
+    query_job = client.query(query)
+    results = query_job.result()
+    return render_template('best_isv2_1.html', results=results)
+
+
+@app.route('/best_isv_by_yr_qtr')
+def index1():
+    query = """ SELECT
+  a.tool AS ISV_Name,
+  a.year AS Year,
+  a.qtr AS Quarter,
+  a.category AS Category
+FROM
+  wwbq-treasuredata.GBQ.BEST_ISV_DETAILS a,
+  (
+  SELECT
+    year,
+    qtr,
+    MIN(Percentage_Of_Failure) AS min_fail
+  FROM
+    wwbq-treasuredata.GBQ.BEST_ISV_DETAILS
+  GROUP BY
+    year,
+    qtr
+  ORDER BY
+    year,
+    qtr) b
+WHERE
+  a.year=b.year
+  AND a.qtr=b.qtr
+  AND a.Percentage_Of_Failure=b.min_fail
+ORDER BY
+  a.year,
+  a.qtr; """
+
+    query_job = client.query(query)
+    results = query_job.result()
+    return render_template('best_isv2_2.html', results=results)
+
+# Helper functions for dropdowns
+def get_domains():
+    query = "SELECT DISTINCT Domain FROM `wwbq-treasuredata.GBQ.ISV_Details`"
+    results = fetch_isvs(query)
+    return [row['Domain'] for row in results]
+
+def get_dist_domains_count():
+    query = "SELECT count(DISTINCT Domain) as total_domains FROM `wwbq-treasuredata.GBQ.ISV_Details` Where Domain Not Like '%+%';"
+    query_job = client.query(query)
+    results = query_job.result()
+    for row in results:
+        return row["total_domains"]
+
+def get_years():
+    query = "SELECT DISTINCT Year FROM `wwbq-treasuredata.GBQ.ISV_Details`"
+    results = fetch_isvs(query)
+    return [row['Year'] for row in results]
+
+def get_quarters():
+    query = "SELECT DISTINCT Quarter FROM `wwbq-treasuredata.GBQ.ISV_Details`"
+    results = fetch_isvs(query)
+    return [row['Quarter'] for row in results]
 
 if __name__ == '__main__':
     app.run(debug=True)

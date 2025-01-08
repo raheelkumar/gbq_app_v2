@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>List of ISVs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style2.css') }}">
+</head>
+<body>
+<div class="button-container"><a href="/" class="home-button">Home</a></div>
+    <h2>List of ISVs Validated Till Date</h2>
+    <table border="1">
+        <tr>
+            <th>ISV Name</th>
+        </tr>
+        {% for isv in isvs %}
+        <tr>
+            <td>{{ isv['Tool_Name'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
