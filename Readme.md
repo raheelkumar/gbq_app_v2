@@ -99,22 +99,34 @@ flask run
 ## Project Structure
 
 ```
-isv-tracking-system/
-├── app.py                 # Main application file
-├── forms.py              # Form definitions
-├── domains.py            # Domain choices configuration
-├── static/               # Static assets
+gbq-partner-portal/
+├── app.py                     # Main application file with routes and BigQuery integration
+├── domains.py                 # Domain choices configuration
+├── forms.py                   # Form definitions and validations
+├── requirements.txt           # Project dependencies
+├── Dockerfile                 # Docker configuration
+├── static/                    # Static assets
 │   ├── css/
+│   │   └── styles.css         # Custom styles
 │   └── js/
-├── templates/            # HTML templates
-│   ├── base.html
-│   ├── index.html
-│   ├── add_isv.html
-│   ├── current_isvs.html
-│   ├── edit_isv.html
-│   ├── isv_history.html
-│   └── isv_history_with_filter.html
-└── requirements.txt      # Python dependencies
+│       └── main.js           # Custom JavaScript
+└── templates/                 # HTML templates
+    ├── add_isv.html          # Add new partner form
+    ├── base.html             # Base template with navigation
+    ├── best_isv2_1.html      # Best partner by domain view
+    ├── best_isv2_2.html      # Best partner by year/quarter view
+    ├── current_isvs.html     # Current partners list
+    ├── edit_isv.html         # Edit partner form
+    ├── home2.html            # Alternative homepage
+    ├── index.html            # Main dashboard
+    ├── isv_history.html      # Partner history view
+    ├── isv_history_with_filter.html  # Filtered partner history
+    ├── isv_status2.html      # Partner status view
+    ├── list_by_domain2.html  # Domain-based listing
+    ├── list_by_year_qtr2.html # Year/quarter-based listing
+    ├── list_isvs2.html       # Complete partner listing
+    ├── login.html            # Login page
+    └── tracker.html          # Partner tracking dashboard
 
 ```
 
@@ -147,7 +159,7 @@ The system includes comprehensive form validation for:
 
 MIT License
 
-Copyright (c) 2025 Raheel Kumar, Anushree Bhure
+Copyright (c) 2025
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -170,3 +182,7 @@ SOFTWARE.
 ## Support
 
 For support, please contact raheelrsingh@gmail.com
+
+## Authors
+
+Raheel Kumar
