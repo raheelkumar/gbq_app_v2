@@ -365,8 +365,21 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('edit-isv-form');
-    const assessmentSheet = document.querySelector('[name="assessment_sheet"]');
-    const questionsDoc = document.querySelector('[name="questions_doc"]');
+
+    // Define all document fields and their expected types
+    const documentFields = [
+        { name: 'assessment_sheet', type: 'sheet' },
+        { name: 'questions_doc', type: 'doc' },
+        { name: 'acceptance_criteria_sheet', type: 'sheet' },
+        { name: 'summary_doc1', type: 'doc' },
+        { name: 'summary_doc2', type: 'doc' },
+        { name: 'iol_doc', type: 'doc' },
+        { name: 'installation_doc', type: 'doc' },
+        { name: 'best_practices_doc', type: 'doc' },
+        { name: 'performance_doc', type: 'doc' },
+        { name: 'metric_observation_doc', type: 'doc' },
+        { name: 'issue_bug_doc', type: 'doc' }
+    ];
 
     function validateGoogleSheet(url) {
         if (!url) return true;  // Allow empty value
@@ -376,6 +389,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateGoogleDoc(url) {
         if (!url) return true;  // Allow empty value
         return url.includes('docs.google.com') && url.includes('/document/d/');
+    }
+
+    function validateGoogleUrl(url, type) {
+        return type === 'sheet' ? validateGoogleSheet(url) : validateGoogleDoc(url);
     }
 
     function addError(element, message) {
@@ -394,47 +411,42 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.validation-error').forEach(el => el.remove());
     }
 
+    // Add validation for all document fields
+    documentFields.forEach(field => {
+        const element = document.querySelector(`[name="${field.name}"]`);
+        if (element) {
+            element.addEventListener('blur', function() {
+                if (this.value && !validateGoogleUrl(this.value, field.type)) {
+                    addError(this, `Please provide a valid Google ${field.type === 'sheet' ? 'Sheets' : 'Docs'} URL`);
+                } else {
+                    const existingError = this.parentNode.querySelector('.validation-error');
+                    if (existingError) {
+                        existingError.remove();
+                    }
+                }
+            });
+        }
+    });
+
+    // Form submission validation
     form.addEventListener('submit', function(e) {
         let hasError = false;
         clearErrors();
 
-        if (assessmentSheet.value && !validateGoogleSheet(assessmentSheet.value)) {
-            addError(assessmentSheet, 'Please provide a valid Google Sheets URL');
-            hasError = true;
-        }
-
-        if (questionsDoc.value && !validateGoogleDoc(questionsDoc.value)) {
-            addError(questionsDoc, 'Please provide a valid Google Docs URL');
-            hasError = true;
-        }
+        // Validate all document fields
+        documentFields.forEach(field => {
+            const element = document.querySelector(`[name="${field.name}"]`);
+            if (element && element.value && !validateGoogleUrl(element.value, field.type)) {
+                addError(element, `Please provide a valid Google ${field.type === 'sheet' ? 'Sheets' : 'Docs'} URL`);
+                hasError = true;
+            }
+        });
 
         if (hasError) {
             e.preventDefault();
             const firstError = document.querySelector('.validation-error');
             if (firstError) {
                 firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-    });
-
-    assessmentSheet.addEventListener('blur', function() {
-        if (this.value && !validateGoogleSheet(this.value)) {
-            addError(this, 'Please provide a valid Google Sheets URL');
-        } else {
-            const existingError = this.parentNode.querySelector('.validation-error');
-            if (existingError) {
-                existingError.remove();
-            }
-        }
-    });
-
-    questionsDoc.addEventListener('blur', function() {
-        if (this.value && !validateGoogleDoc(this.value)) {
-            addError(this, 'Please provide a valid Google Docs URL');
-        } else {
-            const existingError = this.parentNode.querySelector('.validation-error');
-            if (existingError) {
-                existingError.remove();
             }
         }
     });
