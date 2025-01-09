@@ -24,6 +24,7 @@ project_id = 'wwbq-treasuredata'
 client = bigquery.Client(credentials=credentials, project=project_id)
 dataset_id = "GBQ"
 table_id = "isv_data_store"
+new_table_id = "ISV_Details_new"
 
 
 @app.route('/')
@@ -32,30 +33,24 @@ def index():
     counts_query = f"""
     SELECT
         COUNT(CASE WHEN status = 'not started' THEN 1 END) as inactive_count,
-        COUNT(CASE WHEN status = 'in progress' THEN 1 END) as in_progress_count,
-        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count
-    FROM `{dataset_id}.{table_id}`
+        COUNT(CASE WHEN status = 'in progress' THEN 1 END) as in_progress_count
+    FROM `{dataset_id}.{new_table_id}`
     """
     counts_job = client.query(counts_query)
     counts_result = next(counts_job.result())
 
-    # Get Domain count
-    query = """SELECT
-  COUNT(DISTINCT Domain) AS total_domains
-FROM
-  `wwbq-treasuredata.GBQ.ISV_Details`
-WHERE
-  Domain NOT LIKE '%+%';"""
+    # Get Completed count from ISV_details
+    query = """Select count(*) AS completed FROM `wwbq-treasuredata.GBQ.ISV_Details` WHERE status='Completed';"""
     query_job = client.query(query)
-    domain_results = query_job.result()
+    results = next(query_job.result())
 
     # Get recent activities
     activities_query = f"""
     SELECT
-        isv_name,
+        Tool_Name,
         status,
         created_at as updated_at
-    FROM `{dataset_id}.{table_id}`
+    FROM `{dataset_id}.{new_table_id}`
     ORDER BY created_at DESC
     LIMIT 5
     """
@@ -72,7 +67,7 @@ WHERE
     return render_template('index.html',
                            inactive_count=counts_result.inactive_count or 0,
                            in_progress_count=counts_result.in_progress_count or 0,
-                           completed_count=counts_result.completed_count or 0,
+                           completed_count=results.completed or 0,
                            recent_activities=recent_activities,
                            domain_count=len(DOMAIN_CHOICES) or 0,
                            domain_chart=domain_chart,
@@ -90,8 +85,8 @@ def tracker():
     SELECT
         COUNT(CASE WHEN status = 'not started' THEN 1 END) as inactive_count,
         COUNT(CASE WHEN status = 'in progress' THEN 1 END) as in_progress_count,
-        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count
-    FROM `{dataset_id}.{table_id}`
+        COUNT(CASE WHEN status = 'Completed' THEN 1 END) as completed_count
+    FROM `{dataset_id}.{new_table_id}`
     """
     counts_job = client.query(counts_query)
     counts_result = next(counts_job.result())
@@ -99,10 +94,10 @@ def tracker():
     # Get recent activities
     activities_query = f"""
     SELECT
-        isv_name,
+        Tool_Name,
         status,
         created_at as updated_at
-    FROM `{dataset_id}.{table_id}`
+    FROM `{dataset_id}.{new_table_id}`
     ORDER BY created_at DESC
     LIMIT 5
     """
@@ -123,7 +118,7 @@ def check_isv_name():
         # Get the maximum Sr_No
         max_srno_query = f"""
         SELECT MAX(Sr_No) as max_srno
-        FROM `{dataset_id}.{table_id}`
+        FROM `{dataset_id}.{new_table_id}`
         """
         max_srno_result = list(client.query(max_srno_query).result())[0]
         next_srno = (max_srno_result.max_srno or 0) + 1
@@ -131,8 +126,8 @@ def check_isv_name():
         # Check if ISV exists
         exists_query = f"""
         SELECT COUNT(*) as count
-        FROM `{dataset_id}.{table_id}`
-        WHERE LOWER(isv_name) = LOWER('{isv_name}')
+        FROM `{dataset_id}.{new_table_id}`
+        WHERE LOWER(Tool_Name) = LOWER('{isv_name}')
         """
         exists_result = list(client.query(exists_query).result())[0]
 
@@ -147,69 +142,112 @@ def check_isv_name():
 @app.route('/add_isv', methods=['GET', 'POST'])
 def add_isv():
     form = ISVForm()
-    if form.validate_on_submit():
-        try:
-            # Get the maximum Sr_No
-            max_srno_query = f"""
-            SELECT MAX(Sr_No) as max_srno
-            FROM `{dataset_id}.{table_id}`
-            """
-            max_srno_result = list(client.query(max_srno_query).result())[0]
-            next_srno = (max_srno_result.max_srno or 0) + 1
+    if request.method == 'POST':
+        print("Form Data:", request.form)
+        print("Form is valid:", form.validate())
+        print("Form Errors:", form.errors)
 
-            # Join multiple domains with commas
-            domains = ','.join(form.domain.data)
+        if form.validate():
+            try:
+                # Get the maximum Sr_No
+                max_srno_query = f"""
+                SELECT MAX(Sr_No) as max_srno
+                FROM `{dataset_id}.{new_table_id}`
+                """
+                max_srno_result = list(client.query(max_srno_query).result())[0]
+                next_srno = (max_srno_result.max_srno or 0) + 1
 
-            # Prepare the data for BigQuery
-            data_to_insert = {
-                'Sr_No': next_srno,
-                'isv_name': form.isv_name.data,
-                'domain': domains,
-                'certification_type': form.certification_type.data,
-                'version': form.version.data,
-                'description': form.description.data,
-                'team_members': form.team_members.data,
-                'start_date': form.start_date.data.strftime('%Y-%m-%d'),
-                'poc': form.poc.data,
-                'status': form.status.data,
-                'assessment_sheet': form.assessment_sheet.data,
-                'questions_doc': form.questions_doc.data,
-                'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                # Join multiple domains with commas
+                domains = ','.join(form.domain.data) if isinstance(form.domain.data, list) else form.domain.data
+
+                # Calculate Year, Quarter, and YearQuarter from start_date
+                start_date = form.start_date.data
+                year = start_date.year
+                quarter_num = (start_date.month - 1) // 3 + 1
+                quarter = f"Q{quarter_num}"
+                year_quarter = f"FY{year}{quarter}"  # Changed format to FY2025Q1
+
+                # Prepare the data for BigQuery
+                data_to_insert = {
+                    'Sr_No': next_srno,
+                    'Tool_Name': form.isv_name.data,
+                    'Domain': domains,
+                    'Certification_Type': form.certification_type.data,
+                    'Version': form.version.data or '',
+                    'Description': form.description.data,
+                    'Team_Members': form.team_members.data,
+                    'Year': year,
+                    'Quarter': quarter,
+                    'YearQuarter': year_quarter,
+                    'ISV_Start_Date': start_date.strftime('%Y-%m-%d'),
+                    'POC': form.poc.data or '',
+                    'Status': form.status.data,
+                    'Percentage': float(form.percentage.data) if form.percentage.data else 0.0,
+                    'Comments': form.comments.data or '',
+                    'Assessment_Sheet': form.assessment_sheet.data or '',
+                    'Questions_Doc': form.questions_doc.data or '',
+                    'Acceptance_Criteria_Sheet': form.acceptance_criteria_sheet.data or '',
+                    'Summary_Doc1': form.summary_doc1.data or '',
+                    'Summary_Doc2': form.summary_doc2.data or '',
+                    'IOL_Doc': form.iol_doc.data or '',
+                    'Installation_Doc': form.installation_doc.data or '',
+                    'Best_Practices_Doc': form.best_practices_doc.data or '',
+                    'Performance_Doc': form.performance_doc.data or '',
+                    'Metric_Observation_Doc': form.metric_observation_doc.data or '',
+                    'Issue_Bug_Doc': form.issue_bug_doc.data or '',
+                    'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                }
+
+                print("Data to insert:", data_to_insert)
+
+                # Insert into BigQuery
+                table_ref = client.dataset(dataset_id).table(new_table_id)
+                errors = client.insert_rows_json(table_ref, [data_to_insert])
+
+                if errors == []:
+                    # Initialize tasks for the new ISV
+                    initialize_isv_tasks(next_srno)
+
+                    response_data = {'success': True, 'redirect': url_for('current_isvs')}
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return jsonify(response_data)
+                    else:
+                        flash('ISV successfully added!', 'success')
+                        return redirect(url_for('current_isvs'))
+                else:
+                    print("BigQuery Errors:", errors)
+                    error_response = {'success': False, 'error': str(errors)}
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return jsonify(error_response), 400
+                    else:
+                        flash(f'Error occurred while adding ISV: {str(errors)}', 'error')
+                        return render_template('add_isv.html', form=form)
+            except Exception as e:
+                print("Exception:", str(e))
+                error_response = {'success': False, 'error': str(e)}
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify(error_response), 500
+                else:
+                    flash(f'Error: {str(e)}', 'error')
+                    return render_template('add_isv.html', form=form)
+        else:
+            # Form validation failed
+            error_response = {
+                'success': False,
+                'error': 'Form validation failed',
+                'errors': form.errors,
+                'form_data': request.form.to_dict()
             }
-
-            # Insert into BigQuery
-            table_ref = client.dataset(dataset_id).table(table_id)
-            errors = client.insert_rows_json(table_ref, [data_to_insert])
-
-            if errors == []:
-                # Initialize tasks for the new ISV
-                initialize_isv_tasks(next_srno)
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'success': True, 'redirect': url_for('current_isvs')})
-                flash('ISV successfully added!', 'success')
-                return redirect(url_for('current_isvs'))
-            else:
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'success': False, 'error': str(errors)}), 400
-                flash(f'Error occurred while adding ISV: {str(errors)}', 'error')
-
-        except Exception as e:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'error': str(e)}), 500
-            flash(f'Error: {str(e)}', 'error')
-
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return jsonify({
-            'success': False,
-            'error': 'Invalid form data',
-            'errors': form.errors
-        }), 400
+                return jsonify(error_response), 400
+            else:
+                return render_template('add_isv.html', form=form)
 
     return render_template('add_isv.html', form=form)
 
 # Create ISV Tasks table if it doesn't exist
 CREATE_TASKS_TABLE = f"""
-CREATE TABLE IF NOT EXISTS `{dataset_id}.isv_tasks` (
+CREATE TABLE IF NOT EXISTS `{dataset_id}.isv_tasks_new` (
     isv_name STRING,
     task_name STRING,
     status STRING,
@@ -226,38 +264,62 @@ PREDEFINED_TASKS = [
 ]
 
 
-# Update the task initialization function
-def initialize_isv_tasks(sr_no):
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    for task_name in PREDEFINED_TASKS:
-        query = f"""
-        INSERT INTO `{dataset_id}.isv_tasks`
-        (Sr_No, task_name, status, updated_at)
-        VALUES
-        ({sr_no}, '{task_name}', 'not_started', '{now}')
-        """
-        client.query(query).result()
-
-# Update current_isvs route
+#Curent ISV page to see the ongoing ISVs
 @app.route('/current_isvs')
 def current_isvs():
+    # Calculate current and last quarter
+    today = datetime.now()
+    current_year = today.year
+    current_quarter_num = (today.month - 1) // 3 + 1
+    current_quarter = f"Q{current_quarter_num}"
+
+    # Calculate last quarter
+    if current_quarter_num == 1:
+        last_quarter = "Q4"
+        last_quarter_year = current_year - 1
+    else:
+        last_quarter = f"Q{current_quarter_num - 1}"
+        last_quarter_year = current_year
+
+    # Create YearQuarter strings in FY format
+    current_year_quarter = f"FY{current_year}{current_quarter}"
+    last_year_quarter = f"FY{last_quarter_year}{last_quarter}"
+
     query = f"""
     WITH TaskStats AS (
         SELECT 
             Sr_No,
             COUNT(*) as total_tasks,
-            COUNTIF(status = 'completed') as completed_tasks
-        FROM `{dataset_id}.isv_tasks`
+            COUNTIF(status = 'Completed') as completed_tasks
+        FROM `{dataset_id}.isv_tasks_new`
         GROUP BY Sr_No
     )
     SELECT 
-        i.*,
+        i.Sr_No,
+        i.Tool_Name as isv_name,
+        i.Domain as domain,
+        i.POC as poc,
+        i.Status as status,
+        i.ISV_Start_Date as start_date,
+        i.YearQuarter,
         IFNULL(ts.completed_tasks, 0) as completed_tasks,
         IFNULL(ROUND(IFNULL(ts.completed_tasks, 0) * 100.0 / 5, 1), 0) as completion_percentage
-    FROM `{dataset_id}.{table_id}` i
+    FROM `{dataset_id}.{new_table_id}` i
     LEFT JOIN TaskStats ts ON i.Sr_No = ts.Sr_No
-    WHERE i.status != 'Completed'
-    ORDER BY i.start_date DESC
+    WHERE 
+        -- Include all not started and in progress ISVs
+        (i.Status IN ('not started', 'in progress'))
+        OR 
+        -- Include completed ISVs only from current and last quarter
+        (i.Status = 'Completed' 
+         AND i.YearQuarter IN ('{current_year_quarter}', '{last_year_quarter}'))
+    ORDER BY 
+        CASE 
+            WHEN i.Status = 'in progress' THEN 1
+            WHEN i.Status = 'not started' THEN 2
+            WHEN i.Status = 'Completed' THEN 3
+        END,
+        i.ISV_Start_Date DESC
     """
 
     isvs_query = client.query(query)
@@ -266,21 +328,38 @@ def current_isvs():
     # Get tasks for each ISV
     for isv in isvs:
         tasks_query = f"""
-        SELECT *
-        FROM `{dataset_id}.isv_tasks`
+        SELECT 
+            Sr_No,
+            task_name,
+            status,
+            updated_at
+        FROM `{dataset_id}.isv_tasks_new`
         WHERE Sr_No = {isv['Sr_No']}
         ORDER BY task_name
         """
         tasks = list(client.query(tasks_query).result())
 
-        # If no tasks exist, initialize them
-        if not tasks:
-            initialize_isv_tasks(isv['Sr_No'])
-            tasks = list(client.query(tasks_query).result())
-
-        isv['tasks'] = [dict(task.items()) for task in tasks]
+        # Convert tasks to dictionaries and update status display
+        isv['tasks'] = []
+        for task in tasks:
+            task_dict = dict(task.items())
+            # Update status to match what should be displayed in UI
+            if task_dict['status'] == 'completed':
+                task_dict['status'] = 'Completed'
+            isv['tasks'].append(task_dict)
 
     return render_template('current_isvs.html', isvs=isvs)
+
+def initialize_isv_tasks(sr_no):
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    for task_name in PREDEFINED_TASKS:
+        query = f"""
+        INSERT INTO `{dataset_id}.isv_tasks_new`
+        (Sr_No, task_name, status, updated_at)
+        VALUES
+        ({sr_no}, '{task_name}', 'not started', '{now}')
+        """
+        client.query(query).result()
 
 # Update task status route
 @app.route('/task/status', methods=['PUT'])
@@ -289,32 +368,14 @@ def update_task_status():
         data = request.json
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # Update the task status
+        # Update the task status in isv_tasks_new
         query = f"""
-        UPDATE `{dataset_id}.isv_tasks`
-        SET status = '{data['status']}', updated_at = '{now}'
+        UPDATE `{dataset_id}.isv_tasks_new`
+        SET status = '{data['status'].lower()}', updated_at = '{now}'
         WHERE Sr_No = {data['sr_no']}
         AND task_name = '{data['task_name']}'
         """
         client.query(query).result()
-
-        # Check if all tasks are completed
-        # check_query = f"""
-        # SELECT COUNT(*) as incomplete_tasks
-        # FROM `{dataset_id}.isv_tasks`
-        # WHERE Sr_No = {data['sr_no']}
-        # AND status != 'completed'
-        # """
-        # result = list(client.query(check_query).result())[0]
-
-        # Update ISV status if all tasks are completed
-        # if result.incomplete_tasks == 0:
-        #     update_isv_query = f"""
-        #     UPDATE `{dataset_id}.{table_id}`
-        #     SET status = 'completed'
-        #     WHERE Sr_No = {data['sr_no']}
-        #     """
-        #     client.query(update_isv_query).result()
 
         return jsonify({'message': 'Task status updated successfully'}), 200
     except Exception as e:
@@ -326,14 +387,14 @@ def delete_isv(sr_no):
     try:
         # Delete tasks first
         delete_tasks_query = f"""
-        DELETE FROM `{dataset_id}.isv_tasks`
+        DELETE FROM `{dataset_id}.isv_tasks_new`
         WHERE Sr_No = {sr_no}
         """
         client.query(delete_tasks_query).result()
 
         # Delete ISV
         delete_isv_query = f"""
-        DELETE FROM `{dataset_id}.{table_id}`
+        DELETE FROM `{dataset_id}.{new_table_id}`
         WHERE Sr_No = {sr_no}
         """
         client.query(delete_isv_query).result()
@@ -388,21 +449,41 @@ def update_isv(sr_no):
             # Join multiple domains with commas
             domains = ','.join(form.domain.data)
 
+            # Calculate Year, Quarter, and YearQuarter from start_date
+            start_date = form.start_date.data
+            year = start_date.year
+            quarter = f"Q{(start_date.month - 1) // 3 + 1}"
+            year_quarter = f"{year}-{quarter}"
+
             query = f"""
-            UPDATE `{dataset_id}.{table_id}`
+            UPDATE `{dataset_id}.{new_table_id}`
             SET
-                isv_name = '{form.isv_name.data}',
-                domain = '{domains}',
-                certification_type = '{form.certification_type.data}',
-                version = '{form.version.data}',
-                description = '{form.description.data}',
-                team_members = '{form.team_members.data}',
-                start_date = '{form.start_date.data.strftime('%Y-%m-%d')}',
-                end_date = '{form.end_date.data.strftime('%Y-%m-%d')}',
-                poc = '{form.poc.data}',
-                status = '{form.status.data}',
-                assessment_sheet = '{form.assessment_sheet.data}',
-                questions_doc = '{form.questions_doc.data}'
+                Tool_Name = '{form.isv_name.data}',
+                Domain = '{domains}',
+                Certification_Type = '{form.certification_type.data}',
+                Version = '{form.version.data}',
+                Description = '{form.description.data}',
+                Team_Members = '{form.team_members.data}',
+                Year = {year},
+                Quarter = '{quarter}',
+                YearQuarter = '{year_quarter}',
+                ISV_Start_Date = '{form.start_date.data.strftime('%Y-%m-%d')}',
+                ISV_End_Date = '{form.end_date.data.strftime('%Y-%m-%d')}',
+                POC = '{form.poc.data}',
+                Status = '{form.status.data}',
+                Percentage = {float(form.percentage.data) if form.percentage.data else 0.0},
+                Comments = '{form.comments.data}',
+                Assessment_Sheet = '{form.assessment_sheet.data}',
+                Questions_Doc = '{form.questions_doc.data}',
+                Acceptance_Criteria_Sheet = '{form.acceptance_criteria_sheet.data}',
+                Summary_Doc1 = '{form.summary_doc1.data}',
+                Summary_Doc2 = '{form.summary_doc2.data}',
+                IOL_Doc = '{form.iol_doc.data}',
+                Installation_Doc = '{form.installation_doc.data}',
+                Best_Practices_Doc = '{form.best_practices_doc.data}',
+                Performance_Doc = '{form.performance_doc.data}',
+                Metric_Observation_Doc = '{form.metric_observation_doc.data}',
+                Issue_Bug_Doc = '{form.issue_bug_doc.data}'
             WHERE Sr_No = {sr_no}
             """
             client.query(query).result()

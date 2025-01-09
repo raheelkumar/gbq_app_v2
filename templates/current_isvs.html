@@ -20,18 +20,21 @@
                                     </span>
                                 {% endfor %}
                             </p>
-                            <div class="flex items-center gap-4 mt-2">
+                            <div class="flex flex-col gap-2 mt-2">
                                 <p class="text-sm text-gray-600">POC: {{ isv['poc'] }}</p>
-                                <span class="inline-block px-3 py-1 text-sm font-medium rounded-full
-                                    {% if isv['status'] == 'completed' %}
-                                        bg-green-100 text-green-800
-                                    {% elif isv['status'] == 'in progress' %}
-                                        bg-yellow-100 text-yellow-800
-                                    {% else %}
-                                        bg-gray-100 text-gray-800
-                                    {% endif %}">
-                                    Status: {{ isv['status'] }}
-                                </span>
+                                <div class="flex items-center gap-2 text-sm">
+                                    <span class="text-gray-600">Status:</span>
+                                    <span class="inline-block px-3 py-1 font-medium rounded-full
+                                        {% if isv['status'] == 'Completed' %}
+                                            bg-green-100 text-green-800
+                                        {% elif isv['status'] == 'in progress' %}
+                                            bg-yellow-100 text-yellow-800
+                                        {% else %}
+                                            bg-gray-100 text-gray-800
+                                        {% endif %}">
+                                        {{ isv['status'] }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         <div class="flex items-center space-x-4">
@@ -70,9 +73,9 @@
                             </div>
                             <select onchange="updateTaskStatus({{ isv['Sr_No'] }}, '{{ task['task_name'] }}', this.value)"
                                     class="ml-4 rounded-md border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500">
-                                <option value="not_started" {% if task['status'] == 'not_started' %}selected{% endif %}>Not Started</option>
-                                <option value="in_progress" {% if task['status'] == 'in_progress' %}selected{% endif %}>In Progress</option>
-                                <option value="completed" {% if task['status'] == 'completed' %}selected{% endif %}>Completed</option>
+                                <option value="not started" {% if task['status'] == 'not started' %}selected{% endif %}>Not Started</option>
+                                <option value="in progress" {% if task['status'] == 'in progress' %}selected{% endif %}>In Progress</option>
+                                <option value="Completed" {% if task['status'] == 'Completed' %}selected{% endif %}>Completed</option>
                             </select>
                         </div>
                     </div>

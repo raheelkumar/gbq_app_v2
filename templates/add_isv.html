@@ -118,7 +118,7 @@
                 {% endif %}
             </div>
 
-            <!-- Start Date (required) -->
+            <!-- Start Date -->
             <div>
                 <label for="{{ form.start_date.id }}" class="block text-sm font-medium text-gray-700">
                     {{ form.start_date.label }}
@@ -159,34 +159,197 @@
                 {% endif %}
             </div>
 
-            <!-- Assessment Sheet (optional) -->
+            <!-- Percentage -->
             <div>
-                <label for="{{ form.assessment_sheet.id }}" class="block text-sm font-medium text-gray-700">
-                    {{ form.assessment_sheet.label }}
+                <label for="{{ form.percentage.id }}" class="block text-sm font-medium text-gray-700">
+                    {{ form.percentage.label }}
                 </label>
-                {{ form.assessment_sheet(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-                                       placeholder="https://docs.google.com/spreadsheets/d/...") }}
-                {% if form.assessment_sheet.errors %}
-                    {% for error in form.assessment_sheet.errors %}
+                {{ form.percentage(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm") }}
+                {% if form.percentage.errors %}
+                    {% for error in form.percentage.errors %}
                         <p class="mt-1 text-sm text-red-600">{{ error }}</p>
                     {% endfor %}
                 {% endif %}
-                <p class="mt-1 text-sm text-gray-500">Please provide a Google Sheets URL</p>
+                <p class="mt-1 text-sm text-gray-500">Enter completion percentage (0-100)</p>
             </div>
 
-            <!-- Questions Document (optional) -->
+            <!-- Comments -->
             <div>
-                <label for="{{ form.questions_doc.id }}" class="block text-sm font-medium text-gray-700">
-                    {{ form.questions_doc.label }}
+                <label for="{{ form.comments.id }}" class="block text-sm font-medium text-gray-700">
+                    {{ form.comments.label }}
                 </label>
-                {{ form.questions_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-                                     placeholder="https://docs.google.com/document/d/...") }}
-                {% if form.questions_doc.errors %}
-                    {% for error in form.questions_doc.errors %}
+                {{ form.comments(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", rows="3") }}
+                {% if form.comments.errors %}
+                    {% for error in form.comments.errors %}
                         <p class="mt-1 text-sm text-red-600">{{ error }}</p>
                     {% endfor %}
                 {% endif %}
-                <p class="mt-1 text-sm text-gray-500">Please provide a Google Docs URL</p>
+            </div>
+
+            <!-- Documentation Section -->
+            <div class="mt-8">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Documentation</h3>
+
+                <div class="space-y-6">
+                    <!-- Assessment Documents -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="{{ form.assessment_sheet.id }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.assessment_sheet.label }}
+                            </label>
+                            {{ form.assessment_sheet(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                                                   placeholder="https://docs.google.com/spreadsheets/d/...") }}
+                            {% if form.assessment_sheet.errors %}
+                                {% for error in form.assessment_sheet.errors %}
+                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.acceptance_criteria_sheet.id }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.acceptance_criteria_sheet.label }}
+                            </label>
+                            {{ form.acceptance_criteria_sheet(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                                                            placeholder="https://docs.google.com/spreadsheets/d/...") }}
+                            {% if form.acceptance_criteria_sheet.errors %}
+                                {% for error in form.acceptance_criteria_sheet.errors %}
+                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Summary Documents -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="{{ form.summary_doc1.id }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.summary_doc1.label }}
+                            </label>
+                            {{ form.summary_doc1(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                                                placeholder="https://docs.google.com/document/d/...") }}
+                            {% if form.summary_doc1.errors %}
+                                {% for error in form.summary_doc1.errors %}
+                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.summary_doc2.id }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.summary_doc2.label }}
+                            </label>
+                            {{ form.summary_doc2(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                                                placeholder="https://docs.google.com/document/d/...") }}
+                            {% if form.summary_doc2.errors %}
+                                {% for error in form.summary_doc2.errors %}
+                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Technical Documentation -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="{{ form.iol_doc.id }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.iol_doc.label }}
+                            </label>
+                            {{ form.iol_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                                           placeholder="https://docs.google.com/document/d/...") }}
+                            {% if form.iol_doc.errors %}
+                                {% for error in form.iol_doc.errors %}
+                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.installation_doc.id }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.installation_doc.label }}
+                            </label>
+                            {{ form.installation_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                                                   placeholder="https://docs.google.com/document/d/...") }}
+                            {% if form.installation_doc.errors %}
+                                {% for error in form.installation_doc.errors %}
+                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Best Practices and Performance -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="{{ form.best_practices_doc.id }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.best_practices_doc.label }}
+                            </label>
+                            {{ form.best_practices_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                                                     placeholder="https://docs.google.com/document/d/...") }}
+                            {% if form.best_practices_doc.errors %}
+                                {% for error in form.best_practices_doc.errors %}
+                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.performance_doc.id }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.performance_doc.label }}
+                            </label>
+                            {{ form.performance_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                                                  placeholder="https://docs.google.com/document/d/...") }}
+                            {% if form.performance_doc.errors %}
+                                {% for error in form.performance_doc.errors %}
+                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Monitoring and Issues -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="{{ form.metric_observation_doc.id }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.metric_observation_doc.label }}
+                            </label>
+                            {{ form.metric_observation_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                                                         placeholder="https://docs.google.com/document/d/...") }}
+                            {% if form.metric_observation_doc.errors %}
+                                {% for error in form.metric_observation_doc.errors %}
+                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.issue_bug_doc.id }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.issue_bug_doc.label }}
+                            </label>
+                            {{ form.issue_bug_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                                                placeholder="https://docs.google.com/document/d/...") }}
+                            {% if form.issue_bug_doc.errors %}
+                                {% for error in form.issue_bug_doc.errors %}
+                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Questions Document -->
+                    <div>
+                        <label for="{{ form.questions_doc.id }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.questions_doc.label }}
+                        </label>
+                        {{ form.questions_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                                            placeholder="https://docs.google.com/document/d/...") }}
+                        {% if form.questions_doc.errors %}
+                            {% for error in form.questions_doc.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
             </div>
 
             <!-- Form Actions -->
@@ -210,13 +373,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmYes = document.getElementById('confirmYes');
     const confirmNo = document.getElementById('confirmNo');
     const confirmationMessage = document.getElementById('confirmationMessage');
-    let formData = null;
 
-    async function submitForm() {
-        if (!formData) return;
+    // Clear any existing error messages
+    function clearErrors() {
+        document.querySelectorAll('.error-message').forEach(el => el.remove());
+    }
 
+    // Display error message below a field
+    function showFieldError(fieldName, message) {
+        const field = document.querySelector(`[name="${fieldName}"]`);
+        if (field) {
+            const errorDiv = document.createElement('p');
+            errorDiv.className = 'mt-1 text-sm text-red-600 error-message';
+            errorDiv.textContent = message;
+            field.parentElement.appendChild(errorDiv);
+        }
+    }
+
+    async function submitForm(formData) {
         try {
-            // Get the CSRF token
             const csrfToken = document.querySelector('input[name="csrf_token"]').value;
 
             const response = await fetch(form.action, {
@@ -225,30 +400,30 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRFToken': csrfToken
                 },
-                credentials: 'same-origin', // Include cookies
                 body: formData
             });
 
-            if (response.redirected) {
-                // Handle redirect response
-                window.location.href = response.url;
-                return;
-            }
+            const result = await response.json();
 
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                const result = await response.json();
-                if (!response.ok) {
-                    throw new Error(result.error || 'Form submission failed');
-                }
+            if (result.success) {
                 if (result.redirect) {
                     window.location.href = result.redirect;
+                    return;
                 }
             } else {
-                // Handle non-JSON response (like direct HTML response)
-                if (!response.ok) {
-                    throw new Error('Form submission failed');
+                clearErrors();
+
+                console.log('Form submission errors:', result.errors);
+                console.log('Submitted form data:', result.form_data);
+
+                // Display validation errors on the form
+                if (result.errors) {
+                    Object.entries(result.errors).forEach(([field, messages]) => {
+                        showFieldError(field, messages.join(', '));
+                    });
                 }
+
+                throw new Error(result.error || 'Form validation failed. Please check the form for errors.');
             }
         } catch (error) {
             console.error('Error:', error);
@@ -256,89 +431,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    async function checkISVName(isvName) {
-        if (!isvName) return { exists: false };
-
-        try {
-            const response = await fetch('/check_isv_name', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ isv_name: isvName })
-            });
-
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-
-            const data = await response.json();
-            nextSrNo = data.next_srno;
-            return data;
-        } catch (error) {
-            console.error('Error:', error);
-            return { exists: false, error: error.message };
-        }
-    }
-
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
+        clearErrors();
 
-        // Validate dates first
-        const startDate = new Date(document.querySelector('[name="start_date"]').value);
-        const today = new Date();
-
-        // Reset any existing error messages
-        const existingErrors = document.querySelectorAll('.date-error');
-        existingErrors.forEach(error => error.remove());
-
-        let hasError = false;
-
-
-
-        if (hasError) {
-            const firstError = document.querySelector('.text-red-600');
-            if (firstError) {
-                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            return;
-        }
-
-        // Save form data and ensure all fields are included
-        formData = new FormData(form);
-
-
-        // Check if ISV exists
-        const isvName = formData.get('isv_name');
-        const checkResult = await checkISVName(isvName);
-
-        // Update messages
-        if (checkResult.exists) {
-            confirmationMessage.textContent = `An ISV with the name "${isvName}" already exists. Do you want to continue?`;
-        } else {
-            confirmationMessage.textContent = `Do you want to add the ISV "${isvName}"?`;
-        }
+        const formData = new FormData(form);
 
         // Show confirmation modal
+        confirmationMessage.textContent = `Do you want to add the ISV "${formData.get('isv_name')}"?`;
         confirmationModal.classList.remove('hidden');
-    });
 
-    confirmYes.addEventListener('click', function() {
-        confirmationModal.classList.add('hidden');
-        submitForm();
+        // Store form data for later submission
+        confirmYes.onclick = function() {
+            confirmationModal.classList.add('hidden');
+            submitForm(formData);
+        };
     });
 
     confirmNo.addEventListener('click', function() {
         confirmationModal.classList.add('hidden');
-        formData = null;
     });
 
     // Close modal when clicking outside
     confirmationModal.addEventListener('click', function(e) {
         if (e.target === confirmationModal) {
             confirmationModal.classList.add('hidden');
-            formData = null;
         }
     });
 });

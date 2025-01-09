@@ -1,14 +1,10 @@
 # forms.py
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, TextAreaField, DateField, SelectMultipleField, validators
-from wtforms.validators import DataRequired, Length, ValidationError
+from wtforms import StringField, SelectField, TextAreaField, DateField, SelectMultipleField, URLField, validators
+from wtforms.validators import DataRequired, Length, URL, ValidationError
 from datetime import datetime
 from urllib.parse import urlparse
-from wtforms import URLField
-from wtforms.validators import URL, ValidationError
-import re
 from domains import DOMAIN_CHOICES
-
 
 def validate_google_sheet(form, field):
     if not field.data:
@@ -39,8 +35,7 @@ class ISVForm(FlaskForm):
                                        ('lite', 'Lite'),
                                        ('detailed', 'Detailed'),
                                    ],
-                                   validators=[DataRequired()]
-                                   )
+                                   validators=[DataRequired()])
 
     version = TextAreaField('Version', validators=[
         Length(max=500)
@@ -67,15 +62,26 @@ class ISVForm(FlaskForm):
                         choices=[
                             ('not started', 'Not Started'),
                             ('in progress', 'In Progress'),
-                            ('completed', 'Completed')
+                            ('Completed', 'Completed')
                         ],
-                        validators=[DataRequired()]
-                        )
+                        validators=[DataRequired()])
 
-    assessment_sheet = URLField('Assessment Sheet (Google Sheets)', validators=[
-        validate_google_sheet
+    percentage = StringField('Completion Percentage', validators=[
+        Length(max=10)
     ])
 
-    questions_doc = URLField('Questions Document (Google Docs)', validators=[
-        validate_google_doc
+    comments = TextAreaField('Comments', validators=[
+        Length(max=1000)
     ])
+
+    assessment_sheet = URLField('Assessment Sheet', validators=[validate_google_sheet])
+    questions_doc = URLField('Questions Document', validators=[validate_google_doc])
+    acceptance_criteria_sheet = URLField('Acceptance Criteria Sheet', validators=[validate_google_sheet])
+    summary_doc1 = URLField('Summary Document 1', validators=[validate_google_doc])
+    summary_doc2 = URLField('Summary Document 2', validators=[validate_google_doc])
+    iol_doc = URLField('IOL Document', validators=[validate_google_doc])
+    installation_doc = URLField('Installation Document', validators=[validate_google_doc])
+    best_practices_doc = URLField('Best Practices Document', validators=[validate_google_doc])
+    performance_doc = URLField('Performance Document', validators=[validate_google_doc])
+    metric_observation_doc = URLField('Metric Observation Document', validators=[validate_google_doc])
+    issue_bug_doc = URLField('Issue/Bug Document', validators=[validate_google_doc])

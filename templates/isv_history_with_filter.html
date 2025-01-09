@@ -1,224 +1,135 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
+{% block title %}Partner History{% endblock %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ISV Data Filter</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <style>
-        /* Existing Styles */
-        body {
-            margin-left: 20px;
-            margin-right: 20px;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        header {
-            background-color: #007bff;
-            padding: 20px 0;
-            text-align: center;
-            font-size: 2rem;
-            font-weight: bold;
-            color: white;
-            width: auto;
-            box-sizing: border-box;
-            margin-bottom: 20px;
-        }
-
-        .filter-container {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: nowrap;
-            margin-bottom: 10px;
-        }
-
-        select,
-        button {
-            padding: 8px 12px;
-            font-size: 1rem;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            background-color: #fff;
-        }
-
-        button {
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-            border: none;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        /* Styling Back to Homepage button */
-        .back-button {
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
-            padding: 8px 12px;
-            font-size: 1rem;
-            border-radius: 4px;
-            border: none;
-            text-align: center;
-            cursor: pointer;
-        }
-
-        .back-button:hover {
-            background-color: #0056b3;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        table,
-        th,
-        td {
-            border: 1px solid #ddd;
-        }
-
-        th,
-        td {
-            padding: 10px;
-            text-align: left;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-
-        th {
-            background-color: #f4f4f4;
-        }
-
-        @media (max-width: 768px) {
-            .filter-container {
-                flex-wrap: wrap;
-            }
-        }
-    </style>
-</head>
-
-<body>
+{% block content %}
+<div class="min-h-screen bg-gray-100">
     <!-- Header Section -->
-    <header>ISV Tracking Sheet</header>
-
-    <!-- Main Container -->
-    <div class="filter-container">
-        <!-- Back to Homepage Button -->
-        <a href="{{ url_for('index') }}" class="back-button">Back to Homepage</a>
-
-        <!-- Quarter Dropdown -->
-        <div>
-            <label for="quarter">Quarter:</label>
-            <select id="quarter">
-                <option value="">Select Quarter</option>
-                {% for quarter in quarters %}
-                <option value="{{ quarter }}" {% if quarter==selected_quarter %}selected{% endif %}>{{ quarter }}
-                </option>
-                {% endfor %}
-            </select>
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">Partner Tracking Sheet</h1>
+            <p class="text-lg text-gray-600">Filter and view partner validation history</p>
         </div>
-
-        <!-- Year Dropdown -->
-        <div>
-            <label for="year">Year:</label>
-            <select id="year">
-                <option value="">Select Year</option>
-                {% for year in years %}
-                <option value="{{ year }}" {% if year==selected_year %}selected{% endif %}>{{ year }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <!-- Filter Button -->
-        <button id="filter-button">Filter</button>
-
-        <!-- Link to Show Most Recent ISVs -->
-        <a href="{{ url_for('most_recent_isvs') }}">Show Most Recent ISVs</a>
     </div>
 
-    <!-- Data Table -->
-    <div id="data">
-        {% if data %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Tool Name</th>
-                    <th>Domain</th>
-                    <th>Certification Type</th>
-                    <th>Team Members</th>
-                    <th>POC</th>
-                    <th>Assessment Sheet</th>
-                    <th>Questions Doc</th>
-                    <th>ISV Start Date</th>
-                    <th>ISV End Date</th>
-                    <th>Status</th>
-                    <th>Percentage</th>
-                    <th>Comments</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in data %}
-                <tr>
-                    <td>{{ row.tool_name }}</td>
-                    <td>{{ row.domain }}</td>
-                    <td>{{ row.certification_type }}</td>
-                    <td>{{ row.team_members }}</td>
-                    <td>{{ row.poc }}</td>
-                    <td>
-                        {% if row.assessment_sheet == "N/A" %}
-                        N/A
-                        {% elif row.assessment_sheet == "" or row.assessment_sheet is none or row.assessment_sheet ==
-                        "null" %}
-                        None
-                        {% else %}
-                        <a href="{{ row.assessment_sheet }}" target="_blank">Assessment Sheet</a>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if row.questions_doc == "N/A" %}
-                        N/A
-                        {% elif row.questions_doc == "" or row.questions_doc is none or row.questions_doc == "null" %}
-                        None
-                        {% else %}
-                        <a href="{{ row.questions_doc }}" target="_blank">Questions Doc</a>
-                        {% endif %}
-                    </td>
-                    <td>{{ row.isv_start_date }}</td>
-                    <td>{{ row.isv_end_date }}</td>
-                    <td>{{ row.status }}</td>
-                    <td>{{ row.percentage }}</td>
-                    <td>{{ row.comments }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p>No data found.</p>
-        {% endif %}
+    <!-- Filter Section -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Quarter Filter -->
+                <div>
+                    <label for="quarter" class="block text-sm font-medium text-gray-700 mb-2">Quarter</label>
+                    <select id="quarter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                        <option value="">Select Quarter</option>
+                        {% for quarter in quarters %}
+                        <option value="{{ quarter }}" {% if quarter==selected_quarter %}selected{% endif %}>{{ quarter }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Year Filter -->
+                <div>
+                    <label for="year" class="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                    <select id="year" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                        <option value="">Select Year</option>
+                        {% for year in years %}
+                        <option value="{{ year }}" {% if year==selected_year %}selected{% endif %}>{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filter Button -->
+                <div class="flex items-end">
+                    <button id="filter-button" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
+                        Apply Filter
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent ISVs Link -->
+            <div class="mt-4 text-center">
+                <a href="{{ url_for('most_recent_isvs') }}" class="text-blue-600 hover:text-blue-800 font-medium">
+                    Show Most Recent Partners
+                </a>
+            </div>
+        </div>
     </div>
 
-    <script>
-        $(document).ready(function () {
-            // Fetch data on filter button click
-            $('#filter-button').click(function () {
-                const selectedQuarter = $('#quarter').val();
-                const selectedYear = $('#year').val();
-                $.get('/isv_history_with_filter', { quarter: selectedQuarter, year: selectedYear }, function (data) {
-                    $('body').html(data); // Refresh the page with filtered data
-                });
-            });
+    <!-- Data Table Section -->
+    {% if data %}
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tool Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Certification Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team Members</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">POC</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documents</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for row in data %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ row.tool_name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ row.domain }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ row.certification_type }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ row.team_members }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ row.poc }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="flex flex-col space-y-1">
+                                {% if row.assessment_sheet and row.assessment_sheet != "N/A" %}
+                                <a href="{{ row.assessment_sheet }}" target="_blank" class="text-blue-600 hover:text-blue-800">Assessment Sheet</a>
+                                {% endif %}
+                                {% if row.questions_doc and row.questions_doc != "N/A" %}
+                                <a href="{{ row.questions_doc }}" target="_blank" class="text-blue-600 hover:text-blue-800">Questions Doc</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="flex flex-col">
+                                <span>Start: {{ row.isv_start_date }}</span>
+                                <span>End: {{ row.isv_end_date }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if row.status == 'Completed' %}
+                                    bg-green-100 text-green-800
+                                {% elif row.status == 'In Progress' %}
+                                    bg-yellow-100 text-yellow-800
+                                {% else %}
+                                    bg-gray-100 text-gray-800
+                                {% endif %}">
+                                {{ row.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+        <p class="text-gray-600">No data found for the selected filters.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterButton = document.getElementById('filter-button');
+        
+        filterButton.addEventListener('click', function() {
+            const selectedQuarter = document.getElementById('quarter').value;
+            const selectedYear = document.getElementById('year').value;
+            
+            window.location.href = `/isv_history_with_filter?quarter=${selectedQuarter}&year=${selectedYear}`;
         });
-    </script>
-</body>
-
-</html>
+    });
+</script>
+{% endblock %}
