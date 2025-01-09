@@ -4,7 +4,6 @@ from google.cloud import bigquery
 import pandas as pd
 from datetime import datetime
 from google.oauth2 import service_account
-
 from domains import DOMAIN_CHOICES
 from forms import ISVForm
 import os
@@ -15,7 +14,6 @@ import io
 import base64
 from matplotlib.figure import Figure
 import textwrap
-import domains
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
