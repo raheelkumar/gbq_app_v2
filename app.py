@@ -267,88 +267,107 @@ PREDEFINED_TASKS = [
 #Curent ISV page to see the ongoing ISVs
 @app.route('/current_isvs')
 def current_isvs():
-    # Calculate current and last quarter
-    today = datetime.now()
-    current_year = today.year
-    current_quarter_num = (today.month - 1) // 3 + 1
-    current_quarter = f"Q{current_quarter_num}"
-
-    # Calculate last quarter
-    if current_quarter_num == 1:
-        last_quarter = "Q4"
-        last_quarter_year = current_year - 1
-    else:
-        last_quarter = f"Q{current_quarter_num - 1}"
-        last_quarter_year = current_year
-
-    # Create YearQuarter strings in FY format
-    current_year_quarter = f"FY{current_year}{current_quarter}"
-    last_year_quarter = f"FY{last_quarter_year}{last_quarter}"
-
-    query = f"""
-    WITH TaskStats AS (
-        SELECT 
-            Sr_No,
-            COUNT(*) as total_tasks,
-            COUNTIF(status = 'Completed') as completed_tasks
-        FROM `{dataset_id}.isv_tasks_new`
-        GROUP BY Sr_No
-    )
-    SELECT 
-        i.Sr_No,
-        i.Tool_Name as isv_name,
-        i.Domain as domain,
-        i.POC as poc,
-        i.Status as status,
-        i.ISV_Start_Date as start_date,
-        i.YearQuarter,
-        IFNULL(ts.completed_tasks, 0) as completed_tasks,
-        IFNULL(ROUND(IFNULL(ts.completed_tasks, 0) * 100.0 / 5, 1), 0) as completion_percentage
-    FROM `{dataset_id}.{new_table_id}` i
-    LEFT JOIN TaskStats ts ON i.Sr_No = ts.Sr_No
-    WHERE 
-        -- Include all not started and in progress ISVs
-        (i.Status IN ('not started', 'in progress'))
-        OR 
-        -- Include completed ISVs only from current and last quarter
-        (i.Status = 'Completed' 
-         AND i.YearQuarter IN ('{current_year_quarter}', '{last_year_quarter}'))
-    ORDER BY 
-        CASE 
-            WHEN i.Status = 'in progress' THEN 1
-            WHEN i.Status = 'not started' THEN 2
-            WHEN i.Status = 'Completed' THEN 3
-        END,
-        i.ISV_Start_Date DESC
-    """
-
-    isvs_query = client.query(query)
-    isvs = [dict(row.items()) for row in isvs_query.result()]
-
-    # Get tasks for each ISV
-    for isv in isvs:
-        tasks_query = f"""
-        SELECT 
-            Sr_No,
-            task_name,
-            status,
-            updated_at
-        FROM `{dataset_id}.isv_tasks_new`
-        WHERE Sr_No = {isv['Sr_No']}
-        ORDER BY task_name
+    try:
+        # Base query that includes task statistics
+        query = f"""
+        WITH TaskStats AS (
+            SELECT 
+                Sr_No,
+                COUNTIF(status = 'Completed') as completed_tasks,
+                COUNT(*) as total_tasks
+            FROM `{dataset_id}.isv_tasks_new`
+            GROUP BY Sr_No
+        ),
+        RecentCompleted AS (
+            SELECT 
+                Sr_No,
+                ROW_NUMBER() OVER (
+                    PARTITION BY status 
+                    ORDER BY ISV_Start_Date DESC
+                ) as completion_rank
+            FROM `{dataset_id}.{new_table_id}`
+            WHERE status = 'Completed'
+        ),
+        MainData AS (
+            SELECT 
+                i.Sr_No,
+                i.Tool_Name as isv_name,
+                i.Domain as domain,
+                i.POC as poc,
+                i.Status as status,
+                i.ISV_Start_Date as start_date,
+                i.YearQuarter,
+                IFNULL(ts.completed_tasks, 0) as completed_tasks,
+                ROUND(IFNULL(ts.completed_tasks, 0) * 100.0 / 5, 1) as completion_percentage
+            FROM `{dataset_id}.{new_table_id}` i
+            LEFT JOIN TaskStats ts ON i.Sr_No = ts.Sr_No
+            LEFT JOIN RecentCompleted rc ON i.Sr_No = rc.Sr_No
+            WHERE 
+                i.Status IN ('not started', 'in progress')
+                OR (i.Status = 'Completed' AND rc.completion_rank <= 3)
+            ORDER BY 
+                CASE 
+                    WHEN i.Status = 'in progress' THEN 1
+                    WHEN i.Status = 'not started' THEN 2
+                    WHEN i.Status = 'Completed' THEN 3
+                END,
+                i.ISV_Start_Date DESC
+        )
+        SELECT * FROM MainData
         """
-        tasks = list(client.query(tasks_query).result())
 
-        # Convert tasks to dictionaries and update status display
-        isv['tasks'] = []
-        for task in tasks:
-            task_dict = dict(task.items())
-            # Update status to match what should be displayed in UI
-            if task_dict['status'] == 'completed':
-                task_dict['status'] = 'Completed'
-            isv['tasks'].append(task_dict)
+        # Execute the main query
+        query_job = client.query(query)
+        isv_results = list(query_job.result())
 
-    return render_template('current_isvs.html', isvs=isvs)
+        # Process ISVs and get their tasks
+        isvs = []
+        for row in isv_results:
+            # Get tasks for this ISV in a separate query
+            tasks_query = f"""
+            SELECT 
+                Sr_No,
+                task_name,
+                status,
+                updated_at
+            FROM `{dataset_id}.isv_tasks_new`
+            WHERE Sr_No = {row.Sr_No}
+            ORDER BY task_name
+            """
+            tasks = list(client.query(tasks_query).result())
+
+            # Convert tasks to list of dictionaries
+            tasks_data = []
+            for task in tasks:
+                task_dict = {
+                    'Sr_No': task.Sr_No,
+                    'task_name': task.task_name,
+                    'status': 'Completed' if task.status == 'completed' else task.status,
+                    'updated_at': task.updated_at
+                }
+                tasks_data.append(task_dict)
+
+            # Create ISV dictionary with tasks
+            isv = {
+                'Sr_No': row.Sr_No,
+                'isv_name': row.isv_name,
+                'domain': row.domain,
+                'poc': row.poc,
+                'status': row.status,
+                'start_date': row.start_date,
+                'YearQuarter': row.YearQuarter,
+                'completed_tasks': row.completed_tasks,
+                'completion_percentage': row.completion_percentage,
+                'tasks': tasks_data
+            }
+            isvs.append(isv)
+
+        return render_template('current_isvs.html', isvs=isvs)
+
+    except Exception as e:
+        print(f"Error in current_isvs route: {str(e)}")
+        flash('An error occurred while loading the data. Please try again.', 'error')
+        return render_template('current_isvs.html', isvs=[])
 
 def initialize_isv_tasks(sr_no):
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
