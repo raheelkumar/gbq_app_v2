@@ -205,7 +205,7 @@ def add_isv():
                     "{(form.performance_doc.data or '').replace('"', '""')}",
                     "{(form.metric_observation_doc.data or '').replace('"', '""')}",
                     "{(form.issue_bug_doc.data or '').replace('"', '""')}",
-                    CURRENT_TIMESTAMP()
+                    TIMESTAMP(FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S UTC', CURRENT_TIMESTAMP()))
                 )
                 """
 
