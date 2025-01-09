@@ -1,21 +1,20 @@
-<!-- templates/add_isv.html -->
 {% extends "base.html" %}
-{% block title %}Add ISV{% endblock %}
+{% block title %}Register New Partnership{% endblock %}
 
 {% block content %}
-<!-- Confirmation Modal -->
-<div id="confirmationModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm ISV Addition</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500" id="confirmationMessage"></p>
+<!-- Improved Confirmation Modal with backdrop blur -->
+<div id="confirmationModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-8 w-full max-w-md">
+        <div class="bg-white rounded-xl shadow-2xl p-6">
+            <div class="mb-6 text-center">
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Confirm Partnership Registration</h3>
+                <p class="text-gray-600 text-sm" id="confirmationMessage"></p>
             </div>
-            <div class="items-center px-4 py-3">
-                <button id="confirmYes" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    OK
+            <div class="flex justify-center space-x-4">
+                <button id="confirmYes" class="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
+                    Confirm
                 </button>
-                <button id="confirmNo" class="ml-3 px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                <button id="confirmNo" class="px-6 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200">
                     Cancel
                 </button>
             </div>
@@ -23,171 +22,151 @@
     </div>
 </div>
 
-<div class="max-w-3xl mx-auto">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Add New ISV</h1>
-        <p class="mt-2 text-gray-600">Enter the details for the new ISV partnership</p>
+<div class="max-w-4xl mx-auto">
+    <!-- Enhanced Header Section -->
+    <div class="bg-white rounded-xl shadow-md p-8 mb-8">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-gray-900">Register New Partnership</h1>
+            <p class="mt-2 text-gray-600">Complete the form below to register a new BigQuery integration partnership</p>
+        </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <form method="POST" class="space-y-6" id="isv-form">
+    <!-- Main Form Section -->
+    <div class="bg-white rounded-xl shadow-md p-8">
+        <form method="POST" class="space-y-8" id="isv-form">
             {{ form.csrf_token }}
 
-            <!--- ISV Name -->
-            <div>
-                <label for="{{ form.isv_name.id }}" class="block text-sm font-medium text-gray-700">
-                    {{ form.isv_name.label }}
-                    <span class="text-red-500">*</span>
-                </label>
-                {{ form.isv_name(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", onblur="checkISVName(this.value)") }}
-                {% if form.isv_name.errors %}
-                    {% for error in form.isv_name.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
-                {% endif %}
+            <!-- Core Information Section -->
+            <div class="space-y-6">
+                <div class="border-b border-gray-200 pb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Core Information</h2>
+                    <p class="mt-1 text-sm text-gray-500">Essential details about the partnership</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- ISV Name -->
+                    <div class="col-span-2">
+                        <label for="{{ form.isv_name.id }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.isv_name.label }}
+                            <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.isv_name(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200", onblur="checkISVName(this.value)") }}
+                        {% if form.isv_name.errors %}
+                            {% for error in form.isv_name.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Domain and Certification Type -->
+                    <div>
+                        <label for="{{ form.domain.id }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.domain.label }}
+                            <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.domain(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200") }}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.certification_type.id }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.certification_type.label }}
+                            <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.certification_type(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200") }}
+                    </div>
+                </div>
+
+                <!-- Version and Description -->
+                <div class="grid grid-cols-1 gap-6">
+                    <div>
+                        <label for="{{ form.version.id }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.version.label }}
+                        </label>
+                        {{ form.version(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200", rows="3", placeholder="Enter version details...") }}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.description.id }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.description.label }}
+                            <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.description(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200", rows="4", placeholder="Describe the partnership and integration...") }}
+                    </div>
+                </div>
             </div>
 
-            <!-- Domain (required) -->
-            <div>
-                <label for="{{ form.domain.id }}" class="block text-sm font-medium text-gray-700">
-                    {{ form.domain.label }}
-                    <span class="text-red-500">*</span>
-                </label>
-                {{ form.domain(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm") }}
-                {% if form.domain.errors %}
-                    {% for error in form.domain.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
-                {% endif %}
+            <!-- Team and Timeline Section -->
+            <div class="space-y-6">
+                <div class="border-b border-gray-200 pb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Team & Timeline</h2>
+                    <p class="mt-1 text-sm text-gray-500">Project team composition and scheduling</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="col-span-2">
+                        <label for="{{ form.team_members.id }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.team_members.label }}
+                            <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.team_members(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200", rows="3", placeholder="Enter team members' names, separated by commas...") }}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.start_date.id }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.start_date.label }}
+                            <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.start_date(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200", type="date") }}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.poc.id }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.poc.label }}
+                        </label>
+                        {{ form.poc(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200") }}
+                    </div>
+                </div>
             </div>
 
-            <!-- Certification Type (required) -->
-            <div>
-                <label for="{{ form.certification_type.id }}" class="block text-sm font-medium text-gray-700">
-                    {{ form.certification_type.label }}
-                    <span class="text-red-500">*</span>
-                </label>
-                {{ form.certification_type(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm") }}
-                {% if form.certification_type.errors %}
-                    {% for error in form.certification_type.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
-                {% endif %}
-            </div>
+            <!-- Status and Progress Section -->
+            <div class="space-y-6">
+                <div class="border-b border-gray-200 pb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Status & Progress</h2>
+                    <p class="mt-1 text-sm text-gray-500">Current state and completion details</p>
+                </div>
 
-            <!-- Version (optional) -->
-            <div>
-                <label for="{{ form.version.id }}" class="block text-sm font-medium text-gray-700">
-                    {{ form.version.label }}
-                </label>
-                {{ form.version(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", rows="4") }}
-                {% if form.version.errors %}
-                    {% for error in form.version.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
-                {% endif %}
-            </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.status.id }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.status.label }}
+                            <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.status(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200") }}
+                    </div>
 
-            <!-- Description (required) -->
-            <div>
-                <label for="{{ form.description.id }}" class="block text-sm font-medium text-gray-700">
-                    {{ form.description.label }}
-                    <span class="text-red-500">*</span>
-                </label>
-                {{ form.description(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", rows="4") }}
-                {% if form.description.errors %}
-                    {% for error in form.description.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
-                {% endif %}
-            </div>
+                    <div>
+                        <label for="{{ form.percentage.id }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.percentage.label }}
+                        </label>
+                        {{ form.percentage(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200", type="number", min="0", max="100") }}
+                        <p class="mt-1 text-sm text-gray-500">Enter a value between 0 and 100</p>
+                    </div>
 
-            <!-- Team Members (required) -->
-            <div>
-                <label for="{{ form.team_members.id }}" class="block text-sm font-medium text-gray-700">
-                    {{ form.team_members.label }}
-                    <span class="text-red-500">*</span>
-                </label>
-                {{ form.team_members(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", rows="3") }}
-                <p class="mt-1 text-sm text-gray-500">Enter team members' names separated by commas</p>
-                {% if form.team_members.errors %}
-                    {% for error in form.team_members.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
-                {% endif %}
-            </div>
-
-            <!-- Start Date -->
-            <div>
-                <label for="{{ form.start_date.id }}" class="block text-sm font-medium text-gray-700">
-                    {{ form.start_date.label }}
-                    <span class="text-red-500">*</span>
-                </label>
-                {{ form.start_date(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", type="date") }}
-                {% if form.start_date.errors %}
-                    {% for error in form.start_date.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
-                {% endif %}
-            </div>
-
-            <!-- POC (optional) -->
-            <div>
-                <label for="{{ form.poc.id }}" class="block text-sm font-medium text-gray-700">
-                    {{ form.poc.label }}
-                </label>
-                {{ form.poc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm") }}
-                {% if form.poc.errors %}
-                    {% for error in form.poc.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
-                {% endif %}
-            </div>
-
-            <!-- Status (required) -->
-            <div>
-                <label for="{{ form.status.id }}" class="block text-sm font-medium text-gray-700">
-                    {{ form.status.label }}
-                    <span class="text-red-500">*</span>
-                </label>
-                {{ form.status(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm") }}
-                {% if form.status.errors %}
-                    {% for error in form.status.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
-                {% endif %}
-            </div>
-
-            <!-- Percentage -->
-            <div>
-                <label for="{{ form.percentage.id }}" class="block text-sm font-medium text-gray-700">
-                    {{ form.percentage.label }}
-                </label>
-                {{ form.percentage(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm") }}
-                {% if form.percentage.errors %}
-                    {% for error in form.percentage.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
-                {% endif %}
-                <p class="mt-1 text-sm text-gray-500">Enter completion percentage (0-100)</p>
-            </div>
-
-            <!-- Comments -->
-            <div>
-                <label for="{{ form.comments.id }}" class="block text-sm font-medium text-gray-700">
-                    {{ form.comments.label }}
-                </label>
-                {{ form.comments(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm", rows="3") }}
-                {% if form.comments.errors %}
-                    {% for error in form.comments.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                    {% endfor %}
-                {% endif %}
+                    <div class="col-span-2">
+                        <label for="{{ form.comments.id }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.comments.label }}
+                        </label>
+                        {{ form.comments(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200", rows="3", placeholder="Add any additional comments or notes...") }}
+                    </div>
+                </div>
             </div>
 
             <!-- Documentation Section -->
-            <div class="mt-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Documentation</h3>
+            <div class="space-y-6">
+                <div class="border-b border-gray-200 pb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Documentation</h2>
+                    <p class="mt-1 text-sm text-gray-500">Project documentation and resources</p>
+                </div>
 
                 <div class="space-y-6">
                     <!-- Assessment Documents -->
@@ -196,55 +175,16 @@
                             <label for="{{ form.assessment_sheet.id }}" class="block text-sm font-medium text-gray-700">
                                 {{ form.assessment_sheet.label }}
                             </label>
-                            {{ form.assessment_sheet(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-                                                   placeholder="https://docs.google.com/spreadsheets/d/...") }}
-                            {% if form.assessment_sheet.errors %}
-                                {% for error in form.assessment_sheet.errors %}
-                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                                {% endfor %}
-                            {% endif %}
+                            {{ form.assessment_sheet(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200",
+                                                   placeholder="Google Sheets URL...") }}
                         </div>
 
                         <div>
                             <label for="{{ form.acceptance_criteria_sheet.id }}" class="block text-sm font-medium text-gray-700">
                                 {{ form.acceptance_criteria_sheet.label }}
                             </label>
-                            {{ form.acceptance_criteria_sheet(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-                                                            placeholder="https://docs.google.com/spreadsheets/d/...") }}
-                            {% if form.acceptance_criteria_sheet.errors %}
-                                {% for error in form.acceptance_criteria_sheet.errors %}
-                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Summary Documents -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="{{ form.summary_doc1.id }}" class="block text-sm font-medium text-gray-700">
-                                {{ form.summary_doc1.label }}
-                            </label>
-                            {{ form.summary_doc1(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-                                                placeholder="https://docs.google.com/document/d/...") }}
-                            {% if form.summary_doc1.errors %}
-                                {% for error in form.summary_doc1.errors %}
-                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-
-                        <div>
-                            <label for="{{ form.summary_doc2.id }}" class="block text-sm font-medium text-gray-700">
-                                {{ form.summary_doc2.label }}
-                            </label>
-                            {{ form.summary_doc2(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-                                                placeholder="https://docs.google.com/document/d/...") }}
-                            {% if form.summary_doc2.errors %}
-                                {% for error in form.summary_doc2.errors %}
-                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                                {% endfor %}
-                            {% endif %}
+                            {{ form.acceptance_criteria_sheet(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200",
+                                                            placeholder="Google Sheets URL...") }}
                         </div>
                     </div>
 
@@ -254,110 +194,47 @@
                             <label for="{{ form.iol_doc.id }}" class="block text-sm font-medium text-gray-700">
                                 {{ form.iol_doc.label }}
                             </label>
-                            {{ form.iol_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-                                           placeholder="https://docs.google.com/document/d/...") }}
-                            {% if form.iol_doc.errors %}
-                                {% for error in form.iol_doc.errors %}
-                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                                {% endfor %}
-                            {% endif %}
+                            {{ form.iol_doc(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200",
+                                           placeholder="Google Docs URL...") }}
                         </div>
 
-                        <div>
-                            <label for="{{ form.installation_doc.id }}" class="block text-sm font-medium text-gray-700">
-                                {{ form.installation_doc.label }}
-                            </label>
-                            {{ form.installation_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-                                                   placeholder="https://docs.google.com/document/d/...") }}
-                            {% if form.installation_doc.errors %}
-                                {% for error in form.installation_doc.errors %}
-                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Best Practices and Performance -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label for="{{ form.best_practices_doc.id }}" class="block text-sm font-medium text-gray-700">
                                 {{ form.best_practices_doc.label }}
                             </label>
-                            {{ form.best_practices_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-                                                     placeholder="https://docs.google.com/document/d/...") }}
-                            {% if form.best_practices_doc.errors %}
-                                {% for error in form.best_practices_doc.errors %}
-                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-
-                        <div>
-                            <label for="{{ form.performance_doc.id }}" class="block text-sm font-medium text-gray-700">
-                                {{ form.performance_doc.label }}
-                            </label>
-                            {{ form.performance_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-                                                  placeholder="https://docs.google.com/document/d/...") }}
-                            {% if form.performance_doc.errors %}
-                                {% for error in form.performance_doc.errors %}
-                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                                {% endfor %}
-                            {% endif %}
+                            {{ form.installation_doc(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200",
+                                                   placeholder="Google Docs URL...") }}
                         </div>
                     </div>
 
-                    <!-- Monitoring and Issues -->
+                    <!-- Additional Documentation -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="{{ form.metric_observation_doc.id }}" class="block text-sm font-medium text-gray-700">
-                                {{ form.metric_observation_doc.label }}
+                            <label for="{{ form.summary_doc1.id }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.summary_doc1.label }}
                             </label>
-                            {{ form.metric_observation_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-                                                         placeholder="https://docs.google.com/document/d/...") }}
-                            {% if form.metric_observation_doc.errors %}
-                                {% for error in form.metric_observation_doc.errors %}
-                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                                {% endfor %}
-                            {% endif %}
+                            {{ form.iol_doc(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200",
+                                           placeholder="Google Docs URL...") }}
                         </div>
 
                         <div>
-                            <label for="{{ form.issue_bug_doc.id }}" class="block text-sm font-medium text-gray-700">
-                                {{ form.issue_bug_doc.label }}
+                            <label for="{{ form.questions_doc.id }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.questions_doc.label }}
                             </label>
-                            {{ form.issue_bug_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-                                                placeholder="https://docs.google.com/document/d/...") }}
-                            {% if form.issue_bug_doc.errors %}
-                                {% for error in form.issue_bug_doc.errors %}
-                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                                {% endfor %}
-                            {% endif %}
+                            {{ form.installation_doc(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200",
+                                                   placeholder="Google Docs URL...") }}
                         </div>
-                    </div>
-
-                    <!-- Questions Document -->
-                    <div>
-                        <label for="{{ form.questions_doc.id }}" class="block text-sm font-medium text-gray-700">
-                            {{ form.questions_doc.label }}
-                        </label>
-                        {{ form.questions_doc(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-                                            placeholder="https://docs.google.com/document/d/...") }}
-                        {% if form.questions_doc.errors %}
-                            {% for error in form.questions_doc.errors %}
-                                <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                            {% endfor %}
-                        {% endif %}
                     </div>
                 </div>
             </div>
 
             <!-- Form Actions -->
-            <div class="flex justify-end space-x-4 pt-4">
-                <a href="{{ url_for('index') }}" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <a href="{{ url_for('index') }}" class="px-6 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
                     Cancel
                 </a>
-                <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    Add ISV
+                <button type="submit" class="px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                    Register Partnership
                 </button>
             </div>
         </form>

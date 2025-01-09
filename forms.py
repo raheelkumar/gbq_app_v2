@@ -77,7 +77,7 @@ class ISVForm(FlaskForm):
     assessment_sheet = URLField('Assessment Sheet', validators=[validate_google_sheet])
     questions_doc = URLField('Questions Document', validators=[validate_google_doc])
     acceptance_criteria_sheet = URLField('Acceptance Criteria Sheet', validators=[validate_google_sheet])
-    summary_doc1 = URLField('Summary Document 1', validators=[validate_google_doc])
+    summary_doc1 = URLField('Summary Document', validators=[validate_google_doc])
     summary_doc2 = URLField('Summary Document 2', validators=[validate_google_doc])
     iol_doc = URLField('IOL Document', validators=[validate_google_doc])
     installation_doc = URLField('Installation Document', validators=[validate_google_doc])

@@ -72,9 +72,13 @@
                             </svg>
                         </button>
                         <div class="dropdown-content">
+                            <!-- Best ISV by Domain-->
                             <a href="{{ url_for('index_new') }}">Performance by Category</a>
+                            <!-- Best ISV by year and quarter-->
                             <a href="{{ url_for('index1') }}">Performance by Time Period</a>
+                            <!-- ISV by Domain-->
                             <a href="{{ url_for('list_by_domain') }}">Industry Domain Analysis</a>
+                            <!-- ISV by Year and Quarter-->
                             <a href="{{ url_for('list_by_year_quarter') }}">Quarterly Overview</a>
                         </div>
                     </div>
