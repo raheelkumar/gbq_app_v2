@@ -2,99 +2,152 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<div class="min-h-screen">
-    <!-- Hero Section with Logo -->
-    <div class="bg-white rounded-lg shadow-md p-8 mb-8">
-        <div class="max-w-4xl mx-auto text-center">
-            <div class="flex justify-center mb-6">
-                <img src="/static/persistent_logo.png" alt="Persistent Systems" class="h-16 object-contain">
+<div class="min-h-screen space-y-8">
+    <!-- Hero Section with Enhanced Design -->
+    <div class="bg-white rounded-lg shadow-md p-8">
+        <div class="max-w-4xl mx-auto text-center space-y-6">
+            <div class="flex justify-center">
+                <img src="/static/persistent_logo.png" alt="Persistent Systems" class="h-20 object-contain transform hover:scale-105 transition-transform duration-300">
             </div>
-            <h1 class="text-4xl font-bold text-gray-900 mb-4">Welcome to Google BigQuery Connector Validation Suite</h1>
-            <p class="text-xl text-gray-600">Efficiently track and manage your Independent Software Vendor partnerships</p>
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
+                Google BigQuery Connector
+                <span class="text-blue-600">Validation</span>
+            </h1>
+            <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                Your comprehensive platform for tracking and managing Independent Software Vendor partnerships
+            </p>
         </div>
     </div>
 
-    <!-- Quick Stats -->
-    <div class="grid md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6 transform hover:scale-105 transition-transform duration-300">
-            <div class="text-center">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Total Domains</h3>
+    <!-- Quick Stats with Enhanced Cards -->
+    <div class="grid md:grid-cols-4 gap-6">
+        <div class="bg-white rounded-lg shadow-md p-6 transform hover:scale-105 transition-all duration-300">
+            <div class="text-center space-y-3">
+                <div class="inline-block p-3 rounded-full bg-blue-100">
+                    <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900">Total Domains</h3>
                 <p class="text-3xl font-bold text-blue-600">{{ domain_count }}</p>
             </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6 transform hover:scale-105 transition-transform duration-300">
-            <div class="text-center">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Inactive ISVs</h3>
+        <div class="bg-white rounded-lg shadow-md p-6 transform hover:scale-105 transition-all duration-300">
+            <div class="text-center space-y-3">
+                <div class="inline-block p-3 rounded-full bg-gray-100">
+                    <svg class="h-8 w-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900">Inactive</h3>
                 <p class="text-3xl font-bold text-gray-600">{{ inactive_count }}</p>
             </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6 transform hover:scale-105 transition-transform duration-300">
-            <div class="text-center">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">In Progress</h3>
+        <div class="bg-white rounded-lg shadow-md p-6 transform hover:scale-105 transition-all duration-300">
+            <div class="text-center space-y-3">
+                <div class="inline-block p-3 rounded-full bg-yellow-100">
+                    <svg class="h-8 w-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900">In Progress</h3>
                 <p class="text-3xl font-bold text-yellow-600">{{ in_progress_count }}</p>
             </div>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-6 transform hover:scale-105 transition-transform duration-300">
-            <div class="text-center">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Completed</h3>
+        <div class="bg-white rounded-lg shadow-md p-6 transform hover:scale-105 transition-all duration-300">
+            <div class="text-center space-y-3">
+                <div class="inline-block p-3 rounded-full bg-green-100">
+                    <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900">Completed</h3>
                 <p class="text-3xl font-bold text-green-600">{{ completed_count }}</p>
             </div>
         </div>
     </div>
 
-    <!-- Charts Section -->
-    <div class="space-y-8">
+    <!-- Enhanced Charts Section -->
+    <div class="space-y-6">
         <!-- First Row of Charts -->
         <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">Quarterly ISV Distribution</h2>
-                <img src="data:image/png;base64,{{ quarter_chart }}" alt="Quarter Chart" class="w-full">
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all duration-300">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Quarterly ISV Distribution</h2>
+                    <div class="p-2 rounded-full bg-blue-100">
+                        <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 13v-1m4 1v-3m4 3V8M12 21a9 9 0 11-9-9 9 9 0 019 9z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="relative group">
+                    <img src="data:image/png;base64,{{ quarter_chart }}" alt="Quarter Chart" class="w-full rounded-lg">
+                    <div class="absolute inset-0 bg-gray-900 bg-opacity-0 group-hover:bg-opacity-10 transition-opacity duration-300 rounded-lg"></div>
+                </div>
             </div>
-            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">ISV Distribution by Year</h2>
-                <img src="data:image/png;base64,{{ pie_chart }}" alt="Years Chart" class="w-full">
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all duration-300">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">ISV Distribution by Year</h2>
+                    <div class="p-2 rounded-full bg-blue-100">
+                        <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="relative group">
+                    <img src="data:image/png;base64,{{ pie_chart }}" alt="Years Chart" class="w-full rounded-lg">
+                    <div class="absolute inset-0 bg-gray-900 bg-opacity-0 group-hover:bg-opacity-10 transition-opacity duration-300 rounded-lg"></div>
+                </div>
             </div>
         </div>
 
         <!-- Second Row of Charts -->
         <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">Quarterly Growth Rate</h2>
-                <img src="data:image/png;base64,{{ line_chart_qtr }}" alt="Quarter Growth Chart" class="w-full">
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all duration-300">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Quarterly Growth Rate</h2>
+                    <div class="p-2 rounded-full bg-blue-100">
+                        <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="relative group">
+                    <img src="data:image/png;base64,{{ line_chart_qtr }}" alt="Quarter Growth Chart" class="w-full rounded-lg">
+                    <div class="absolute inset-0 bg-gray-900 bg-opacity-0 group-hover:bg-opacity-10 transition-opacity duration-300 rounded-lg"></div>
+                </div>
             </div>
-            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">Top Domains</h2>
-                <img src="data:image/png;base64,{{ hor_chart_dom }}" alt="Top Domain Chart" class="w-full">
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all duration-300">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Top Domains</h2>
+                    <div class="p-2 rounded-full bg-blue-100">
+                        <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="relative group">
+                    <img src="data:image/png;base64,{{ hor_chart_dom }}" alt="Top Domain Chart" class="w-full rounded-lg">
+                    <div class="absolute inset-0 bg-gray-900 bg-opacity-0 group-hover:bg-opacity-10 transition-opacity duration-300 rounded-lg"></div>
+                </div>
             </div>
         </div>
 
         <!-- Full Width Domain Chart -->
-        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">ISV Distribution by Domain</h2>
-            <img src="data:image/png;base64,{{ domain_chart }}" alt="Domain Chart" class="w-full">
+        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all duration-300">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">ISV Distribution by Domain</h2>
+                <div class="p-2 rounded-full bg-blue-100">
+                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="relative group">
+                <img src="data:image/png;base64,{{ domain_chart }}" alt="Domain Chart" class="w-full rounded-lg">
+                <div class="absolute inset-0 bg-gray-900 bg-opacity-0 group-hover:bg-opacity-10 transition-opacity duration-300 rounded-lg"></div>
+            </div>
         </div>
     </div>
-
-<!--    &lt;!&ndash; Recent Activity &ndash;&gt;-->
-<!--    <div class="mt-8">-->
-<!--        <div class="bg-white rounded-lg shadow-md p-6">-->
-<!--            <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>-->
-<!--            <div class="space-y-4">-->
-<!--                {% for activity in recent_activities %}-->
-<!--                <div class="border-b last:border-b-0 pb-4 last:pb-0">-->
-<!--                    <div class="flex items-center">-->
-<!--                        <div class="flex-shrink-0">-->
-<!--                            <span class="inline-block h-2 w-2 rounded-full {% if activity.status == 'completed' %}bg-green-600{% elif activity.status == 'in progress' %}bg-yellow-600{% else %}bg-gray-600{% endif %}"></span>-->
-<!--                        </div>-->
-<!--                        <div class="ml-4">-->
-<!--                            <p class="text-sm font-medium text-gray-900">{{ activity.isv_name }}</p>-->
-<!--                            <p class="text-sm text-gray-600">{{ activity.status }} - {{ activity.updated_at }}</p>-->
-<!--                        </div>-->
-<!--                    </div>-->
-<!--                </div>-->
-<!--                {% endfor %}-->
-<!--            </div>-->
-<!--        </div>-->
-<!--    </div>-->
 </div>
 {% endblock %}

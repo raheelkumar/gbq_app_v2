@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GBQ App - {% block title %}{% endblock %}</title>
+    <title>BigQuery Partnership Portal - {% block title %}{% endblock %}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
@@ -61,30 +61,28 @@
         <div class="container mx-auto px-6 py-3">
             <div class="flex items-center justify-between">
                 <div class="text-xl font-semibold">
-                    <a href="{{ url_for('index') }}">GBQ App</a>
+                    <a href="{{ url_for('index') }}">BigQuery Partnership Portal</a>
                 </div>
                 <div class="hidden md:flex space-x-8">
-<!--                    <a href="{{ url_for('dashboards') }}" class="hover:text-blue-200">Dashboard</a>-->
-
                     <div class="dropdown">
                         <button class="dropdown-button" onclick="toggleDropdown(event)">
-                            Dashboard
+                            Analytics Dashboard
                             <svg class="inline-block ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
                         <div class="dropdown-content">
-                            <a href="{{ url_for('list_by_domain') }}">ISVs by Domain</a>
-                            <a href="{{ url_for('list_by_year_quarter') }}">ISVs by Year/Quarter</a>
-                            <a href="{{ url_for('index_new') }}">Best ISVs by Category</a>
-                            <a href="{{ url_for('index1') }}">Best ISVs by Year & Quarter</a>
+                            <a href="{{ url_for('index_new') }}">Performance by Category</a>
+                            <a href="{{ url_for('index1') }}">Performance by Time Period</a>
+                            <a href="{{ url_for('list_by_domain') }}">Industry Domain Analysis</a>
+                            <a href="{{ url_for('list_by_year_quarter') }}">Quarterly Overview</a>
                         </div>
                     </div>
 
-                    <a href="{{ url_for('index') }}" class="hover:text-blue-200">ISV Details</a>
-                    <a href="{{ url_for('tracker') }}" class="hover:text-blue-200">ISV Tracker</a>
-                    <a href="{{ url_for('add_isv') }}" class="hover:text-blue-200">Register New Partnership</a>
-                    <a href="{{ url_for('logins') }}" class="hover:text-blue-200">Login</a>
+                    <a href="{{ url_for('index') }}" class="hover:text-blue-200">Partnership Details</a>
+                    <a href="{{ url_for('tracker') }}" class="hover:text-blue-200">Partnership Management</a>
+                    <a href="{{ url_for('add_isv') }}" class="hover:text-blue-200">Register Partnership</a>
+                    <a href="{{ url_for('logins') }}" class="hover:text-blue-200">Account Access</a>
                 </div>
             </div>
         </div>
