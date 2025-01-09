@@ -165,63 +165,64 @@ def add_isv():
                 year = start_date.year
                 quarter_num = (start_date.month - 1) // 3 + 1
                 quarter = f"Q{quarter_num}"
-                year_quarter = f"FY{year}{quarter}"  # Changed format to FY2025Q1
+                year_quarter = f"FY{year}{quarter}"  # Format: FY2025Q1
 
-                # Prepare the data for BigQuery
-                data_to_insert = {
-                    'Sr_No': next_srno,
-                    'Tool_Name': form.isv_name.data,
-                    'Domain': domains,
-                    'Certification_Type': form.certification_type.data,
-                    'Version': form.version.data or '',
-                    'Description': form.description.data,
-                    'Team_Members': form.team_members.data,
-                    'Year': year,
-                    'Quarter': quarter,
-                    'YearQuarter': year_quarter,
-                    'ISV_Start_Date': start_date.strftime('%Y-%m-%d'),
-                    'POC': form.poc.data or '',
-                    'Status': form.status.data,
-                    'Percentage': float(form.percentage.data) if form.percentage.data else 0.0,
-                    'Comments': form.comments.data or '',
-                    'Assessment_Sheet': form.assessment_sheet.data or '',
-                    'Questions_Doc': form.questions_doc.data or '',
-                    'Acceptance_Criteria_Sheet': form.acceptance_criteria_sheet.data or '',
-                    'Summary_Doc1': form.summary_doc1.data or '',
-                    'Summary_Doc2': form.summary_doc2.data or '',
-                    'IOL_Doc': form.iol_doc.data or '',
-                    'Installation_Doc': form.installation_doc.data or '',
-                    'Best_Practices_Doc': form.best_practices_doc.data or '',
-                    'Performance_Doc': form.performance_doc.data or '',
-                    'Metric_Observation_Doc': form.metric_observation_doc.data or '',
-                    'Issue_Bug_Doc': form.issue_bug_doc.data or '',
-                    'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                }
+                # Construct the INSERT query using standard SQL
+                insert_query = f"""
+                INSERT INTO `{dataset_id}.{new_table_id}` (
+                    Sr_No, Tool_Name, Domain, Certification_Type, Version, Description,
+                    Team_Members, Year, Quarter, YearQuarter, ISV_Start_Date,
+                    POC, Status, Percentage, Comments, Assessment_Sheet,
+                    Questions_Doc, Acceptance_Criteria_Sheet, Summary_Doc1,
+                    Summary_Doc2, IOL_Doc, Installation_Doc, Best_Practices_Doc,
+                    Performance_Doc, Metric_Observation_Doc, Issue_Bug_Doc,
+                    created_at
+                )
+                VALUES (
+                    {next_srno},
+                    "{form.isv_name.data.replace('"', '""')}",
+                    "{domains.replace('"', '""')}",
+                    "{form.certification_type.data.replace('"', '""')}",
+                    "{(form.version.data or '').replace('"', '""')}",
+                    "{form.description.data.replace('"', '""')}",
+                    "{form.team_members.data.replace('"', '""')}",
+                    {year},
+                    "{quarter}",
+                    "{year_quarter}",
+                    DATE("{start_date.strftime('%Y-%m-%d')}"),
+                    "{(form.poc.data or '').replace('"', '""')}",
+                    "{form.status.data.replace('"', '""')}",
+                    {float(form.percentage.data) if form.percentage.data else 0.0},
+                    "{(form.comments.data or '').replace('"', '""')}",
+                    "{(form.assessment_sheet.data or '').replace('"', '""')}",
+                    "{(form.questions_doc.data or '').replace('"', '""')}",
+                    "{(form.acceptance_criteria_sheet.data or '').replace('"', '""')}",
+                    "{(form.summary_doc1.data or '').replace('"', '""')}",
+                    "{(form.summary_doc2.data or '').replace('"', '""')}",
+                    "{(form.iol_doc.data or '').replace('"', '""')}",
+                    "{(form.installation_doc.data or '').replace('"', '""')}",
+                    "{(form.best_practices_doc.data or '').replace('"', '""')}",
+                    "{(form.performance_doc.data or '').replace('"', '""')}",
+                    "{(form.metric_observation_doc.data or '').replace('"', '""')}",
+                    "{(form.issue_bug_doc.data or '').replace('"', '""')}",
+                    CURRENT_TIMESTAMP()
+                )
+                """
 
-                print("Data to insert:", data_to_insert)
+                # Execute the insert query
+                query_job = client.query(insert_query)
+                query_job.result()  # Wait for the query to complete
 
-                # Insert into BigQuery
-                table_ref = client.dataset(dataset_id).table(new_table_id)
-                errors = client.insert_rows_json(table_ref, [data_to_insert])
+                # Initialize tasks for the new ISV after successful insert
+                initialize_isv_tasks(next_srno)
 
-                if errors == []:
-                    # Initialize tasks for the new ISV
-                    initialize_isv_tasks(next_srno)
-
-                    response_data = {'success': True, 'redirect': url_for('current_isvs')}
-                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                        return jsonify(response_data)
-                    else:
-                        flash('ISV successfully added!', 'success')
-                        return redirect(url_for('current_isvs'))
+                response_data = {'success': True, 'redirect': url_for('current_isvs')}
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify(response_data)
                 else:
-                    print("BigQuery Errors:", errors)
-                    error_response = {'success': False, 'error': str(errors)}
-                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                        return jsonify(error_response), 400
-                    else:
-                        flash(f'Error occurred while adding ISV: {str(errors)}', 'error')
-                        return render_template('add_isv.html', form=form)
+                    flash('ISV successfully added!', 'success')
+                    return redirect(url_for('current_isvs'))
+
             except Exception as e:
                 print("Exception:", str(e))
                 error_response = {'success': False, 'error': str(e)}
@@ -268,7 +269,7 @@ PREDEFINED_TASKS = [
 @app.route('/current_isvs')
 def current_isvs():
     try:
-        # Base query that includes task statistics
+        # Base query that includes actual percentage from ISV_Details_new table
         query = f"""
         WITH TaskStats AS (
             SELECT 
@@ -298,7 +299,7 @@ def current_isvs():
                 i.ISV_Start_Date as start_date,
                 i.YearQuarter,
                 IFNULL(ts.completed_tasks, 0) as completed_tasks,
-                ROUND(IFNULL(ts.completed_tasks, 0) * 100.0 / 5, 1) as completion_percentage
+                IFNULL(i.Percentage, 0) as completion_percentage
             FROM `{dataset_id}.{new_table_id}` i
             LEFT JOIN TaskStats ts ON i.Sr_No = ts.Sr_No
             LEFT JOIN RecentCompleted rc ON i.Sr_No = rc.Sr_No
