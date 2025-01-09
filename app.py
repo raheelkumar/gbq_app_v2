@@ -406,40 +406,51 @@ def delete_isv(sr_no):
 
 @app.route('/isv/<int:sr_no>/edit', methods=['GET'])
 def edit_isv(sr_no):
+    # Query to get all fields from the table
     query = f"""
     SELECT 
         Sr_No,
-        isv_name,
-        domain,
-        certification_type,
-        version,
-        description,
-        team_members,
-        start_date,
-        end_date,
-        poc,
-        status,
-        assessment_sheet,
-        questions_doc
-    FROM `{dataset_id}.{table_id}`
+        Tool_Name as isv_name,
+        Domain as domain,
+        Certification_Type as certification_type,
+        Version as version,
+        Description as description,
+        Team_Members as team_members,
+        ISV_Start_Date as start_date,
+        ISV_End_Date as end_date,
+        POC as poc,
+        Status as status,
+        Percentage as percentage,
+        Comments as comments,
+        Assessment_Sheet as assessment_sheet,
+        Questions_Doc as questions_doc,
+        Acceptance_Criteria_Sheet as acceptance_criteria_sheet,
+        Summary_Doc1 as summary_doc1,
+        Summary_Doc2 as summary_doc2,
+        IOL_Doc as iol_doc,
+        Installation_Doc as installation_doc,
+        Best_Practices_Doc as best_practices_doc,
+        Performance_Doc as performance_doc,
+        Metric_Observation_Doc as metric_observation_doc,
+        Issue_Bug_Doc as issue_bug_doc
+    FROM `{dataset_id}.{new_table_id}`
     WHERE Sr_No = {sr_no}
     """
     result = list(client.query(query).result())[0]
+    result_dict = dict(result.items())
 
     # Convert comma-separated domains back to list
-    result_dict = dict(result.items())
     if result_dict.get('domain'):
         result_dict['domain'] = result_dict['domain'].split(',')
 
-    # Convert start_date and end_date if they are strings
+    # Convert dates if they are strings
     if isinstance(result_dict.get('start_date'), str):
         result_dict['start_date'] = datetime.strptime(result_dict['start_date'], '%Y-%m-%d').date()
-    if isinstance(result_dict.get('end_date'), str):
+    if isinstance(result_dict.get('end_date'), str) and result_dict['end_date']:
         result_dict['end_date'] = datetime.strptime(result_dict['end_date'], '%Y-%m-%d').date()
 
     form = ISVForm(data=result_dict)
     return render_template('edit_isv.html', form=form, sr_no=sr_no, isv_name=result_dict['isv_name'])
-
 
 @app.route('/isv/<int:sr_no>/update', methods=['POST'])
 def update_isv(sr_no):
@@ -452,38 +463,43 @@ def update_isv(sr_no):
             # Calculate Year, Quarter, and YearQuarter from start_date
             start_date = form.start_date.data
             year = start_date.year
-            quarter = f"Q{(start_date.month - 1) // 3 + 1}"
-            year_quarter = f"{year}-{quarter}"
+            quarter_num = (start_date.month - 1) // 3 + 1
+            quarter = f"Q{quarter_num}"
+            year_quarter = f"FY{year}{quarter}"  # Format: FY2025Q1
+
+            # Escape single quotes in text fields to prevent SQL injection
+            def escape_sql(value):
+                return str(value).replace("'", "''") if value else ''
 
             query = f"""
             UPDATE `{dataset_id}.{new_table_id}`
             SET
-                Tool_Name = '{form.isv_name.data}',
-                Domain = '{domains}',
-                Certification_Type = '{form.certification_type.data}',
-                Version = '{form.version.data}',
-                Description = '{form.description.data}',
-                Team_Members = '{form.team_members.data}',
+                Tool_Name = '{escape_sql(form.isv_name.data)}',
+                Domain = '{escape_sql(domains)}',
+                Certification_Type = '{escape_sql(form.certification_type.data)}',
+                Version = '{escape_sql(form.version.data)}',
+                Description = '{escape_sql(form.description.data)}',
+                Team_Members = '{escape_sql(form.team_members.data)}',
                 Year = {year},
                 Quarter = '{quarter}',
                 YearQuarter = '{year_quarter}',
                 ISV_Start_Date = '{form.start_date.data.strftime('%Y-%m-%d')}',
-                ISV_End_Date = '{form.end_date.data.strftime('%Y-%m-%d')}',
-                POC = '{form.poc.data}',
-                Status = '{form.status.data}',
+                ISV_End_Date = '{form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else ''}',
+                POC = '{escape_sql(form.poc.data)}',
+                Status = '{escape_sql(form.status.data)}',
                 Percentage = {float(form.percentage.data) if form.percentage.data else 0.0},
-                Comments = '{form.comments.data}',
-                Assessment_Sheet = '{form.assessment_sheet.data}',
-                Questions_Doc = '{form.questions_doc.data}',
-                Acceptance_Criteria_Sheet = '{form.acceptance_criteria_sheet.data}',
-                Summary_Doc1 = '{form.summary_doc1.data}',
-                Summary_Doc2 = '{form.summary_doc2.data}',
-                IOL_Doc = '{form.iol_doc.data}',
-                Installation_Doc = '{form.installation_doc.data}',
-                Best_Practices_Doc = '{form.best_practices_doc.data}',
-                Performance_Doc = '{form.performance_doc.data}',
-                Metric_Observation_Doc = '{form.metric_observation_doc.data}',
-                Issue_Bug_Doc = '{form.issue_bug_doc.data}'
+                Comments = '{escape_sql(form.comments.data)}',
+                Assessment_Sheet = '{escape_sql(form.assessment_sheet.data)}',
+                Questions_Doc = '{escape_sql(form.questions_doc.data)}',
+                Acceptance_Criteria_Sheet = '{escape_sql(form.acceptance_criteria_sheet.data)}',
+                Summary_Doc1 = '{escape_sql(form.summary_doc1.data)}',
+                Summary_Doc2 = '{escape_sql(form.summary_doc2.data)}',
+                IOL_Doc = '{escape_sql(form.iol_doc.data)}',
+                Installation_Doc = '{escape_sql(form.installation_doc.data)}',
+                Best_Practices_Doc = '{escape_sql(form.best_practices_doc.data)}',
+                Performance_Doc = '{escape_sql(form.performance_doc.data)}',
+                Metric_Observation_Doc = '{escape_sql(form.metric_observation_doc.data)}',
+                Issue_Bug_Doc = '{escape_sql(form.issue_bug_doc.data)}'
             WHERE Sr_No = {sr_no}
             """
             client.query(query).result()
@@ -492,6 +508,7 @@ def update_isv(sr_no):
             return redirect(url_for('current_isvs'))
         except Exception as e:
             flash(f'Error: {str(e)}', 'error')
+            print(f"Update error: {str(e)}")  # For debugging
 
     return render_template('edit_isv.html', form=form, sr_no=sr_no)
 
