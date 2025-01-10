@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISV Details</title>
+<style>
+       body {
+           font-family: Arial, sans-serif;
+           background-color: #f4f4f9;
+           color: #333;
+           margin: 0;
+           padding: 0;
+       }
+       header {
+           background-color: #007bff;
+           color: white;
+           padding: 1rem;
+           text-align: center;
+       }
+       .container {
+           width: 80%;
+           margin: 2rem auto;
+           background: #fff;
+           border-radius: 8px;
+           box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+           padding: 20px;
+       }
+       .tool-header {
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           margin-bottom: 20px;
+       }
+       .tool-name {
+           font-size: 1.5rem;
+           font-weight: bold;
+       }
+       .btn-container {
+           display: flex;
+           gap: 10px;
+       }
+       .btn {
+           padding: 10px 20px;
+           text-decoration: none;
+           color: white;
+           border-radius: 5px;
+           cursor: pointer;
+           font-size: 0.9rem;
+       }
+       .edit-btn {
+           background-color: #28a745;
+       }
+       .edit-btn:hover {
+           background-color: #218838;
+       }
+       .back-btn {
+           background-color: #dc3545;
+       }
+       .back-btn:hover {
+           background-color: #c82333;
+       }
+       table {
+           width: 100%;
+           border-collapse: collapse;
+           margin-top: 20px;
+       }
+       th, td {
+           border: 1px solid #ddd;
+           padding: 10px;
+           text-align: left;
+       }
+       th {
+           background-color: #f1f1f1;
+       }
+       .alert {
+           padding: 10px;
+           margin-bottom: 15px;
+           border-radius: 4px;
+       }
+       .alert-success {
+           background-color: #d4edda;
+           color: #155724;
+       }
+       .alert-error {
+           background-color: #f8d7da;
+           color: #721c24;
+       }
+</style>
+</head>
+<body>
+<header>
+<h1>ISV Details</h1>
+</header>
+<div class="container">
+   {% with messages = get_flashed_messages(with_categories=true) %}
+       {% if messages %}
+           {% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+                   {{ message }}
+</div>
+           {% endfor %}
+       {% endif %}
+   {% endwith %}
+   {% if details %}
+<div class="tool-header">
+<div class="tool-name">{{ details.Tool_Name }}</div>
+<div class="btn-container">
+<a class="edit-btn btn" href="/edit/{{ details.Tool_Name }}">Edit</a>
+<a class="back-btn btn" href="/list">Back to List</a>
+</div>
+</div>
+<table>
+<tr>
+<th>Key</th>
+<th>Value</th>
+</tr>
+       {% for key, value in details.items() %}
+    {% if key!='Sr_No' and key!='Year' and key!='Quarter' %}
+<tr>
+<td>{{ key }}</td>
+<td>
+               {% if "Doc" in key or "Sheet" in key %}
+                   {% if value and value != 'None' %}
+<a href="{{ value }}" target="_blank">Click here to open</a>
+                   {% endif %}
+               {% else %}
+                   {{ value if value else "" }}
+               {% endif %}
+</td>
+</tr>
+    {% endif %}
+       {% endfor %}
+</table>
+   {% else %}
+<p>No details found.</p>
+   {% endif %}
+</div>
+</body>
+</html>

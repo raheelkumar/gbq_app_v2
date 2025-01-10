@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISV List</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+   body {
+       font-family: Arial, sans-serif;
+       margin: 0;
+       padding: 0;
+       background-color: #f4f4f9;
+       color: #333;
+   }
+   header {
+       background-color: #007bff;
+       color: white;
+       padding: 1rem;
+       text-align: center;
+   }
+   .container {
+       width: 80%;
+       margin: 2rem auto;
+       padding: 2rem;
+       background-color: white;
+       border-radius: 8px;
+       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+   }
+   h2 {
+       text-align: center;
+       color: #007bff;
+   }
+   .filter-container {
+       display: flex;
+       justify-content: space-between;
+       margin-bottom: 20px;
+       align-items: center;
+   }
+   .filter-container input, .filter-container select, .filter-container button {
+       padding: 10px;
+       margin-right: 10px;
+       border-radius: 5px;
+       border: 1px solid #ccc;
+   }
+   .filter-container select {
+       width: 25%;
+   }
+   .filter-container input {
+       width: 35%;
+   }
+   .filter-container button {
+       background-color: #007bff;
+       color: white;
+       cursor: pointer;
+   }
+   .filter-container button:hover {
+       background-color: #0056b3;
+   }
+   .table-container {
+       overflow-x: auto;
+   }
+   table {
+       width: 100%;
+       border-collapse: collapse;
+       margin-top: 20px;
+   }
+   table, th, td {
+       border: 1px solid #ddd;
+   }
+   th, td {
+       padding: 10px;
+       text-align: left;
+   }
+   th {
+       background-color: #f1f1f1;
+   }
+   td {
+       background-color: #fafafa;
+   }
+   .back-btn {
+       display: inline-block;
+       margin-top: 20px;
+       padding: 10px 20px;
+       background-color: #007bff;
+       color: white;
+       text-decoration: none;
+       border-radius: 5px;
+       font-weight: bold;
+   }
+   .back-btn:hover {
+       background-color: #0056b3;
+   }
+   .pagination {
+       text-align: center;
+       margin-top: 20px;
+   }
+   .pagination a {
+       padding: 8px 12px;
+       margin: 0 4px;
+       background-color: #007bff;
+       color: white;
+       text-decoration: none;
+       border-radius: 5px;
+   }
+   .pagination a:hover {
+       background-color: #0056b3;
+   }
+   .pagination .active {
+       background-color: #0056b3;
+   }
+     .action-btn {
+           background: none;
+           border: none;
+           cursor: pointer;
+           margin: 0 5px;
+       }
+       .action-btn i {
+           font-size: 18px;
+           color: #007bff;
+       }
+       .action-btn i:hover {
+           color: #0056b3;
+       }
+       .fa-pencil-alt:before {
+    color: #FFC107;
+}
+    .fa-trash:before {
+    color: #D43F2F;
+}
+</style>
+</head>
+<body>
+<header>
+<h1>ISV List</h1>
+</header>
+<div class="container">
+<h2>Available ISVs</h2>
+<!-- Filter section with all elements in the same line -->
+<div class="filter-container">
+<!-- YearQuarter filter -->
+<select id="yearQuarterFilter">
+<option value="">Select YearQuarter</option>
+       {% for yearquarter in yearquarters %}
+<option value="{{ yearquarter }}" {% if request.args.get('yearquarter') == yearquarter %}selected{% endif %}>{{ yearquarter }}</option>
+       {% endfor %}
+</select>
+<!-- Status filter -->
+<select id="statusFilter">
+<option value="">Select Status</option>
+       {% for status in statuses %}
+<option value="{{ status }}" {% if request.args.get('status') == status %}selected{% endif %}>{{ status }}</option>
+       {% endfor %}
+</select>
+<!-- Search bar -->
+<input type="text" id="search" placeholder="Search ISV by name or domain" value="{{ request.args.get('search', '') }}" />
+<!-- Search button -->
+<button id="search-btn">Search</button>
+<!-- Reset filters button -->
+<button id="reset-filters-btn">Reset Filters</button>
+</div>
+<!-- Table with ISVs -->
+<div class="table-container">
+<div class="spinner" id="loading-spinner"></div>
+<table id="isv-table">
+<thead>
+<tr>
+<th>ISV Name</th>
+<th>Domain</th>
+<th>YearQuarter</th>
+<th>Status</th>
+    <th>Actions</th>
+</tr>
+</thead>
+<tbody>
+       {% for isv in isvs %}
+<tr>
+<td><a>{{ isv.Tool_Name }}</a></td>
+<td>{{ isv.Domain }}</td>
+<td>{{ isv.YearQuarter }}</td>
+<td>{{ isv.Status }}</td>
+    <td>
+<!-- View Button -->
+<button class="action-btn view-btn" onclick="window.location.href='/details/{{ isv.Tool_Name }}'">
+<i class="fas fa-eye"></i>
+</button>
+<!-- Edit Button -->
+<button class="action-btn edit-btn" onclick="window.location.href='/edit/{{ isv.Tool_Name }}'">
+<i class="fas fa-pencil-alt"></i>
+</button>
+<!-- Delete Button -->
+<button class="action-btn delete-btn" onclick="deleteTool('{{ isv.Tool_Name }}')">
+<i class="fas fa-trash"></i>
+</button>
+</td>
+</tr>
+       {% endfor %}
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="pagination">
+   {% if total_pages > 1 %}
+<!-- Previous Page Link -->
+   {% if current_page > 1 %}
+<a href="/list?page={{ current_page - 1 }}&search={{ request.args.get('search', '') }}&yearquarter={{ request.args.get('yearquarter', '') }}&status={{ request.args.get('status', '') }}">Previous</a>
+   {% endif %}
+<!-- Page Numbers -->
+   {% for page_num in range(1, total_pages + 1) %}
+<a href="/list?page={{ page_num }}&search={{ request.args.get('search', '') }}&yearquarter={{ request.args.get('yearquarter', '') }}&status={{ request.args.get('status', '') }}"
+      class="{{ 'active' if page_num == current_page else '' }}">{{ page_num }}</a>
+   {% endfor %}
+<!-- Next Page Link -->
+   {% if current_page < total_pages %}
+<a href="/list?page={{ current_page + 1 }}&search={{ request.args.get('search', '') }}&yearquarter={{ request.args.get('yearquarter', '') }}&status={{ request.args.get('status', '') }}">Next</a>
+   {% endif %}
+   {% endif %}
+</div>
+<a href="{{ url_for('index') }}" class="back-btn">Back to Home</a>
+</div>
+<script>
+   // Search functionality triggered by button click
+   document.getElementById('search-btn').addEventListener('click', function () {
+       const query = document.getElementById('search').value;
+       const yearQuarter = document.getElementById('yearQuarterFilter').value;
+       const status = document.getElementById('statusFilter').value;
+       window.location.href = '/list?search=' + encodeURIComponent(query) + '&yearquarter=' + encodeURIComponent(yearQuarter) + '&status=' + encodeURIComponent(status);
+   });
+   // Reset Filters functionality triggered by reset button click
+   document.getElementById('reset-filters-btn').addEventListener('click', function () {
+       window.location.href = '/list';
+   });
+   // Trigger search when Enter key is pressed
+   document.getElementById('search').addEventListener('keypress', function (event) {
+       if (event.key === 'Enter') {
+           const query = document.getElementById('search').value;
+           const yearQuarter = document.getElementById('yearQuarterFilter').value;
+           const status = document.getElementById('statusFilter').value;
+           window.location.href = '/list?search=' + encodeURIComponent(query) + '&yearquarter=' + encodeURIComponent(yearQuarter) + '&status=' + encodeURIComponent(status);
+       }
+   });
+   // Update filters when dropdowns are changed
+   document.getElementById('yearQuarterFilter').addEventListener('change', function () {
+       document.getElementById('search-btn').click();
+   });
+   document.getElementById('statusFilter').addEventListener('change', function () {
+       document.getElementById('search-btn').click();
+   });
+     function deleteTool(toolName) {
+           if (confirm(`Are you sure you want to delete the tool "${toolName}"?`)) {
+               fetch(`/delete_isv/${toolName}`, { method: 'DELETE' })
+                   .then(response => response.json())
+                   .then(data => {
+                       if (data.message) {
+                           alert(data.message);
+                           location.reload(); // Reload the page to reflect changes
+                       } else {
+                           alert("Failed to delete the tool: " + data.error);
+                       }
+                   })
+                   .catch(error => {
+                       console.error("Error deleting tool:", error);
+                       alert("An error occurred while deleting the tool.");
+                   });
+           }
+       }
+// Ensure that the yearquarter filter is populated and sorted when the page loads
+  document.addEventListener('DOMContentLoaded', function() {
+      const yearQuarterSelect = document.getElementById('yearQuarterFilter');
+      // Extract the options as an array of option elements
+      const options = Array.from(yearQuarterSelect.options).slice(1);  // Skip the first option (Select YearQuarter)
+      // Sort the options based on the year and quarter (FYyyyyQx)
+      options.sort((a, b) => {
+          const aYear = parseInt(a.value.slice(2, 6));  // Extract year part
+          const aQuarter = parseInt(a.value.slice(7));  // Extract quarter part
+          const bYear = parseInt(b.value.slice(2, 6));  // Extract year part
+          const bQuarter = parseInt(b.value.slice(7));  // Extract quarter part
+          // Compare first by year, then by quarter (descending order)
+          if (aYear === bYear) {
+              return bQuarter - aQuarter;  // Sort by quarter if years are the same
+          }
+          return bYear - aYear;  // Sort by year
+      });
+      // Append the sorted options back to the select element
+      options.forEach(option => yearQuarterSelect.appendChild(option));
+  });
+</script>
+</body>
+</html>
+
+

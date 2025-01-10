@@ -24,7 +24,7 @@ project_id = 'wwbq-treasuredata'
 client = bigquery.Client(credentials=credentials, project=project_id)
 dataset_id = "GBQ"
 table_id = "isv_data_store"
-new_table_id = "ISV_Details_new"
+new_table_id = "ISV_Details"
 
 
 @app.route('/')
@@ -401,7 +401,7 @@ def update_task_status():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Update delete ISV route
+# Delete ISVs from current_isv page
 @app.route('/isv/<int:sr_no>', methods=['DELETE'])
 def delete_isv(sr_no):
     try:
@@ -762,16 +762,16 @@ def list_isvs():
     return render_template('list_isvs2.html', isvs=isvs)
 
 
-@app.route('/list_by_domain', methods=['GET', 'POST'])
+@app.route('/list_by_domain', methods=['GET'])
 def list_by_domain():
-    if request.method == 'POST':
-        domain = request.form['domain']
-        query = f"""
-        SELECT Tool_Name FROM `wwbq-treasuredata.GBQ.ISV_Details` WHERE domain = '{domain}'
-        """
-        isvs = fetch_isvs(query)
-        return render_template('list_by_domain2.html', domains=get_domains(), isvs=isvs, selected_domain=domain)
-    return render_template('list_by_domain2.html', domains=get_domains(), isvs=None)
+    query = """
+    SELECT Domain, ARRAY_AGG(Tool_Name) as Tool_Name 
+    FROM `wwbq-treasuredata.GBQ.ISV_Details` 
+    GROUP BY Domain 
+    ORDER BY Domain
+    """
+    isvs = fetch_isvs(query)
+    return render_template('list_by_domain2.html', isvs=isvs)
 
 
 
@@ -1094,6 +1094,162 @@ def get_quarters():
 def logins():
     #login logic
     return render_template('login.html')
+
+#vinnet and Anurag's code
+
+# Cache for ISV data
+ISV_CACHE = []
+def load_isv_data():
+   """Load data from BigQuery into a cache."""
+   global ISV_CACHE
+   query = """
+       SELECT Tool_Name, Domain, YearQuarter, Status
+       FROM `wwbq-treasuredata.GBQ.ISV_Details`
+       ORDER BY ISV_Start_Date DESC
+   """
+   query_job = client.query(query)
+   results = query_job.result()
+   ISV_CACHE = [{"Tool_Name": row["Tool_Name"], "Domain": row["Domain"], "YearQuarter": row["YearQuarter"], "Status": row["Status"]} for row in results]
+
+def get_domains():
+    query=f"""SELECT DISTINCT Domain FROM `wwbq-treasuredata.GBQ.ISV_Details`"""
+    query_job = client.query(query)
+    results = query_job.result()
+    domains = [row.Domain for row in results]
+    return domains
+
+@app.route('/list')
+def list_isv():
+   global ISV_CACHE
+   load_isv_data()
+   search_term = request.args.get('search', '').lower()
+   yearquarter_filter = request.args.get('yearquarter', '')
+   status_filter = request.args.get('status', '')
+   page = int(request.args.get('page', 1))
+   items_per_page = 10
+   # Filter data based on YearQuarter and Status if specified
+   filtered_data = [
+       item for item in ISV_CACHE
+       if (search_term in item["Tool_Name"].lower() or search_term in item["Domain"].lower()) and
+          (not yearquarter_filter or item["YearQuarter"] == yearquarter_filter) and
+          (not status_filter or item["Status"] == status_filter)
+   ]
+   total_items = len(filtered_data)
+   total_pages = (total_items + items_per_page - 1) // items_per_page
+   start_index = (page - 1) * items_per_page
+   end_index = start_index + items_per_page
+   paginated_data = filtered_data[start_index:end_index]
+   # Get distinct YearQuarter and Status values
+   yearquarters = list(set(item["YearQuarter"] for item in ISV_CACHE))
+   statuses = list(set(item["Status"] for item in ISV_CACHE))
+   return render_template(
+       'isv_list.html',
+       isvs=paginated_data,
+       total_pages=total_pages,
+       current_page=page,
+       yearquarters=yearquarters,
+       statuses=statuses
+   )
+
+DATASET_ID = "GBQ"
+TABLE_ID = "ISV_Details"
+@app.route('/details/<tool_name>', methods=['GET'])
+def details(tool_name):
+   table_ref = f"{client.project}.{DATASET_ID}.{TABLE_ID}"
+   query = f"SELECT * FROM `{table_ref}` WHERE Tool_Name = @tool_name"
+   job_config = bigquery.QueryJobConfig(
+       query_parameters=[
+           bigquery.ScalarQueryParameter("tool_name", "STRING", tool_name)
+       ]
+   )
+   results = list(client.query(query, job_config=job_config))
+   details = results[0] if results else None
+   return render_template('isv_details.html', details=details)
+
+@app.route('/edit/<tool_name>', methods=['GET', 'POST'])
+def edit(tool_name):
+   domain_options = get_domains()
+   table_ref = f"{client.project}.{DATASET_ID}.{TABLE_ID}"
+   if request.method == 'GET':
+       # Fetch the current details for the specified tool
+       query = f"SELECT * FROM `{table_ref}` WHERE Tool_Name = @tool_name"
+       job_config = bigquery.QueryJobConfig(
+           query_parameters=[bigquery.ScalarQueryParameter("tool_name", "STRING", tool_name)]
+       )
+       results = list(client.query(query, job_config=job_config))
+       details = results[0] if results else None
+       # Exclude Sr_No from the details
+       if details and "Sr_No" in details:
+           details.pop("Sr_No", None)
+       return render_template('edit.html', details=details,domain_options=domain_options)
+   elif request.method == 'POST':
+       # Get the form data
+       data = request.form.to_dict()
+       # Remove Sr_No and Tool_Name from the data (if present)
+       data.pop("Sr_No", None)
+       data.pop("Tool_Name", None)  # Exclude Tool_Name from the SET clause
+       del data["New_Domain"]
+       # Construct the update query dynamically
+       if request.form.get('New_Domain'):
+        new_domain=request.form.get('New_Domain')
+        del data["New_Domain"]
+        data['Domain']=new_domain
+       date = str(data['ISV_Start_Date'])
+       date_obj=datetime.strptime(date,'%Y-%m-%d')
+       year = date_obj.year
+       month = date_obj.month
+       quarter = ""
+       if 1<= month <=3:
+           quarter="Q1"
+       elif 4<=month<=6:
+           quarter="Q2"
+       elif 7<=month<=9:
+           quarter="Q3"
+       else:
+           quarter="Q4"
+       YearQuarter = "FY"+str(year)+quarter
+       data['YearQuarter']=YearQuarter
+       update_query = f"""
+           UPDATE `{table_ref}`
+           SET {', '.join([f"{key} = @{key}" for key in data.keys()])}
+           WHERE Tool_Name = @tool_name
+       """
+       # Handle BigQuery data types based on schema
+       query_parameters = []
+       for key, value in data.items():
+           if key in ["Year"]:  # INT64 fields
+               query_parameters.append(bigquery.ScalarQueryParameter(key, "INT64", int(value)))
+           elif key in ["Percentage"]:  # NUMERIC fields
+               query_parameters.append(bigquery.ScalarQueryParameter(key, "NUMERIC", float(value)))
+           elif key in ["ISV_Start_Date", "ISV_End_Date"]:  # DATE fields
+               query_parameters.append(bigquery.ScalarQueryParameter(key, "DATE", value))
+           else:  # Default to STRING
+               query_parameters.append(bigquery.ScalarQueryParameter(key, "STRING", value))
+       # Add tool_name for the WHERE clause
+       query_parameters.append(bigquery.ScalarQueryParameter("tool_name", "STRING", tool_name))
+       # Execute the update query
+       job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
+       client.query(update_query, job_config=job_config).result()
+       flash("Details updated successfully!","success")
+       return redirect(url_for('details',tool_name=tool_name))
+
+@app.route('/delete_isv/<tool_name>', methods=['DELETE'])
+def delete_tool(tool_name):
+    """Delete a tool from BigQuery."""
+    print(tool_name)
+    table_ref = f"{client.project}.{DATASET_ID}.{TABLE_ID}"
+    delete_query = f"DELETE FROM `{table_ref}` WHERE Tool_Name = @tool_name"
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[bigquery.ScalarQueryParameter("tool_name", "STRING", tool_name)]
+    )
+    try:
+        # Execute the delete query
+        query_job = client.query(delete_query, job_config=job_config)
+        query_job.result()  # Wait for completion
+        return jsonify({"message": "Tool deleted successfully!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)

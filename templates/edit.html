@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edit ISV Details</title>
+<style>
+       body {
+           font-family: Arial, sans-serif;
+           background-color: #f4f4f9;
+           color: #333;
+           margin: 0;
+           padding: 0;
+       }
+       header {
+           background-color: #007bff;
+           color: white;
+           padding: 1rem;
+           text-align: center;
+       }
+       .container {
+           width: 80%;
+           margin: 2rem auto;
+           background: #fff;
+           border-radius: 8px;
+           box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+           padding: 20px;
+           position: relative;
+       }
+       .btn-container {
+           display: flex;
+           justify-content: flex-end;
+           margin-bottom: 10px;
+       }
+       .btn-container a, .btn-container button {
+           padding: 10px 20px;
+           text-decoration: none;
+           color: white;
+           border-radius: 5px;
+           cursor: pointer;
+           margin-left: 10px;
+       }
+       .back-btn {
+           background-color: #dc3545;
+       }
+       .back-btn:hover {
+           background-color: #c82333;
+       }
+       .discard-btn {
+           background-color: #ffc107;
+           color: #333;
+       }
+       .discard-btn:hover {
+           background-color: #e0a800;
+       }
+       table {
+           width: 100%;
+           border-collapse: collapse;
+           margin-top: 20px;
+       }
+       th, td {
+           border: 1px solid #ddd;
+           padding: 10px;
+           text-align: left;
+       }
+       th {
+           background-color: #f1f1f1;
+       }
+       input[type="text"] {
+           width: 100%;
+           padding: 8px;
+           margin: 5px 0;
+           border: 1px solid #ddd;
+           border-radius: 4px;
+       }
+       button[type="submit"] {
+           background-color: #28a745;
+           color: white;
+           padding: 10px 20px;
+           border: none;
+           border-radius: 5px;
+           cursor: pointer;
+           margin-top: 20px;
+       }
+       .button-container{
+       display: flex;
+       justify-content: center;
+       margin-top: 20px;
+       }
+       button[type="submit"]:hover {
+           background-color: #218838;
+       }
+    .hidden {
+           display: none;
+       }
+</style>
+</head>
+<body>
+<script>
+       function handleDomainChange() {
+           const domainDropdown = document.getElementById('Domain');
+           const newDomainInput = document.getElementById('new-domain-input');
+           if (domainDropdown.value === 'CREATE NEW') {
+               newDomainInput.classList.remove('hidden');
+               newDomainInput.setAttribute('required', 'true');
+           } else {
+               newDomainInput.classList.add('hidden');
+               newDomainInput.removeAttribute('required');
+           }
+       }
+</script>
+<header>
+<h1>Edit ISV Details</h1>
+</header>
+<div class="container">
+<div class="btn-container">
+<a class="discard-btn" href="/details/{{ details.Tool_Name }}">Discard Changes</a>
+<a class="back-btn" href="/list">Back to List</a>
+</div>
+<form method="POST">
+<table>
+<tr>
+<th></th>
+<th></th>
+</tr>
+           {% for key, value in details.items() %}
+               {% if key != 'Sr_No' and key != 'Year' and key != 'Quarter' %}
+<tr>
+<td>{{ key }}</td>
+<td>
+                       {% if key != 'YearQuarter' and key!='Domain' and key!='Status' and key!='Certification_Type' and key != 'ISV_Start_Date' and key != 'ISV_End_Date' %}
+<input type="text" id="{{ key }}" name="{{ key }}" value="{{ value if value is not none else '' }}">
+                        {% elif key == 'Domain' %}
+    <select id="Domain" name="Domain" onchange="handleDomainChange()">
+        {% for option in domain_options %}
+        <option value="{{option}}" {% if details['Domain'] == option %}selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+        <option value="CREATE NEW">CREATE NEW</option>
+</select>
+<input
+                                   type="text"
+                                   id="new-domain-input"
+                                   name="New_Domain"
+                                   placeholder="Enter new domain"
+                                   class="hidden"
+>
+    {% elif key == 'Certification_Type' %}
+    <select id="Certification_Type" name="Certification_Type">
+        <option value="Lite" {%if details['Certification_Type']=='Lite'%}selected{%endif%}>Lite</option>
+        <option value="Detailed" {%if details['Certification_Type']=='Detailed'%}selected{%endif%}>Detailed</option>
+    </select>
+    {% elif key == 'ISV_Start_Date' or key == 'ISV_End_Date' %}
+    <input type="date" id="{{ key }}" name="{{ key }}" value="{{ value if value is not none else '' }}">
+    {% elif key == 'Status' %}
+<select id="{{ key }}" name="{{ key }}">
+<option value="Not-started" {% if value == 'Not-started' %}selected{% endif %}>Not-started</option>
+<option value="On-Hold" {% if value == 'On-Hold' %}selected{% endif %}>On-Hold</option>
+<option value="In-Progress" {% if value == 'In-Progress' %}selected{% endif %}>In-Progress</option>
+<option value="Completed" {% if value == 'Completed' %}selected{% endif %}>Completed</option>
+</select>
+                       {% else %}
+                       {{ value if value else "" }}
+                       {% endif %}
+</td>
+</tr>
+               {% endif %}
+           {% endfor %}
+</table>
+    <div class="button-container">
+<button type="submit">Save Changes</button>
+    </div>
+</form>
+</div>
+</body>
+</html>
