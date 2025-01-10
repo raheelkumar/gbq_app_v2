@@ -7,7 +7,7 @@
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold text-gray-900">Edit ISV Details</h1>
             <div class="space-x-4">
-                <a href="/details/{{ details.Tool_Name }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                <a href="/details/{{ details.Sr_No }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
                     Discard Changes
                 </a>
                 <a href="/list" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
@@ -16,53 +16,152 @@
             </div>
         </div>
 
-        <form method="POST" class="space-y-6">
+        <form method="POST" action="/edit/{{ details.Sr_No }}" class="space-y-6">
             <div class="bg-white shadow overflow-hidden sm:rounded-lg">
                 <div class="px-4 py-5 sm:p-6">
                     <div class="grid grid-cols-1 gap-6">
-                        {% for key, value in details.items() %}
-                            {% if key != 'Sr_No' and key != 'Year' and key != 'Quarter' %}
+                        <!-- Tool Name -->
+                        <div class="col-span-1">
+                            <label for="Tool_Name" class="block text-sm font-medium text-gray-700">Tool Name</label>
+                            <div class="mt-1">
+                                <input type="text" id="Tool_Name" name="Tool_Name"
+                                       value="{{ details.Tool_Name if details.Tool_Name is not none else '' }}"
+                                       class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                        </div>
+
+                        <!-- Domain -->
+                        <div class="col-span-1">
+                            <label for="Domain" class="block text-sm font-medium text-gray-700">Domain</label>
+                            <div class="mt-1 space-y-2">
+                                <select id="Domain" name="Domain" onchange="handleDomainChange()"
+                                        class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                    {% for option in domain_options %}
+                                        <option value="{{ option }}" {% if details.Domain == option %}selected{% endif %}>{{ option }}</option>
+                                    {% endfor %}
+                                    <option value="CREATE NEW">CREATE NEW</option>
+                                </select>
+                                <input type="text" id="new-domain-input" name="New_Domain" placeholder="Enter new domain"
+                                       class="hidden mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                        </div>
+
+                        <!-- Certification Type -->
+                        <div class="col-span-1">
+                            <label for="Certification_Type" class="block text-sm font-medium text-gray-700">Certification Type</label>
+                            <div class="mt-1">
+                                <select id="Certification_Type" name="Certification_Type"
+                                        class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                    <option value="Lite" {% if details.Certification_Type == 'Lite' %}selected{% endif %}>Lite</option>
+                                    <option value="Detailed" {% if details.Certification_Type == 'Detailed' %}selected{% endif %}>Detailed</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Version -->
+                        <div class="col-span-1">
+                            <label for="Version" class="block text-sm font-medium text-gray-700">Version</label>
+                            <div class="mt-1">
+                                <input type="text" id="Version" name="Version"
+                                       value="{{ details.Version if details.Version is not none else '' }}"
+                                       class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="col-span-1">
+                            <label for="Description" class="block text-sm font-medium text-gray-700">Description</label>
+                            <div class="mt-1">
+                                <textarea id="Description" name="Description" rows="3"
+                                          class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">{{ details.Description if details.Description is not none else '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Team Members -->
+                        <div class="col-span-1">
+                            <label for="Team_Members" class="block text-sm font-medium text-gray-700">Team Members</label>
+                            <div class="mt-1">
+                                <input type="text" id="Team_Members" name="Team_Members"
+                                       value="{{ details.Team_Members if details.Team_Members is not none else '' }}"
+                                       class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                        </div>
+
+                        <!-- Start Date -->
+                        <div class="col-span-1">
+                            <label for="ISV_Start_Date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                            <div class="mt-1">
+                                <input type="date" id="ISV_Start_Date" name="ISV_Start_Date"
+                                       value="{{ details.ISV_Start_Date.strftime('%Y-%m-%d') if details.ISV_Start_Date else '' }}"
+                                       class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                        </div>
+
+                        <!-- End Date -->
+                        <div class="col-span-1">
+                            <label for="ISV_End_Date" class="block text-sm font-medium text-gray-700">End Date</label>
+                            <div class="mt-1">
+                                <input type="date" id="ISV_End_Date" name="ISV_End_Date"
+                                       value="{{ details.ISV_End_Date.strftime('%Y-%m-%d') if details.ISV_End_Date and not isinstance(details.ISV_End_Date, str) else '' }}"
+                                       class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                        </div>
+
+                        <!-- POC -->
+                        <div class="col-span-1">
+                            <label for="POC" class="block text-sm font-medium text-gray-700">POC</label>
+                            <div class="mt-1">
+                                <input type="text" id="POC" name="POC"
+                                       value="{{ details.POC if details.POC is not none else '' }}"
+                                       class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-span-1">
+                            <label for="Status" class="block text-sm font-medium text-gray-700">Status</label>
+                            <div class="mt-1">
+                                <select id="Status" name="Status"
+                                        class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                    <option value="not started" {% if details.Status == 'not started' %}selected{% endif %}>Not-started</option>
+                                    <option value="on hold" {% if details.Status == 'on hold' %}selected{% endif %}>On-Hold</option>
+                                    <option value="in progress" {% if details.Status == 'in progress' %}selected{% endif %}>In-Progress</option>
+                                    <option value="Completed" {% if details.Status == 'Completed' %}selected{% endif %}>Completed</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Percentage -->
+                        <div class="col-span-1">
+                            <label for="Percentage" class="block text-sm font-medium text-gray-700">Percentage</label>
+                            <div class="mt-1">
+                                <input type="number" id="Percentage" name="Percentage" min="0" max="100" step="0.1"
+                                       value="{{ details.Percentage if details.Percentage is not none else '0' }}"
+                                       class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                        </div>
+
+                        <!-- Comments -->
+                        <div class="col-span-1">
+                            <label for="Comments" class="block text-sm font-medium text-gray-700">Comments</label>
+                            <div class="mt-1">
+                                <textarea id="Comments" name="Comments" rows="3"
+                                          class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">{{ details.Comments if details.Comments is not none else '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Document Links -->
+                        {% for field in ['Assessment_Sheet', 'Questions_Doc', 'Acceptance_Criteria_Sheet',
+                                       'Summary_Doc1', 'Summary_Doc2', 'IOL_Doc', 'Installation_Doc',
+                                       'Best_Practices_Doc', 'Performance_Doc', 'Metric_Observation_Doc', 'Issue_Bug_Doc'] %}
                             <div class="col-span-1">
-                                <label for="{{ key }}" class="block text-sm font-medium text-gray-700">{{ key }}</label>
+                                <label for="{{ field }}" class="block text-sm font-medium text-gray-700">{{ field | replace('_', ' ') }}</label>
                                 <div class="mt-1">
-                                    {% if key != 'YearQuarter' and key!='Domain' and key!='Status' and key!='Certification_Type' and key != 'ISV_Start_Date' and key != 'ISV_End_Date' %}
-                                        <input type="text" id="{{ key }}" name="{{ key }}" value="{{ value if value is not none else '' }}"
-                                               class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
-                                    {% elif key == 'Domain' %}
-                                        <div class="space-y-2">
-                                            <select id="Domain" name="Domain" onchange="handleDomainChange()" 
-                                                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                                                {% for option in domain_options %}
-                                                    <option value="{{option}}" {% if details['Domain'] == option %}selected{% endif %}>{{ option }}</option>
-                                                {% endfor %}
-                                                <option value="CREATE NEW">CREATE NEW</option>
-                                            </select>
-                                            <input type="text" id="new-domain-input" name="New_Domain" placeholder="Enter new domain"
-                                                   class="hidden mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                                        </div>
-                                    {% elif key == 'Certification_Type' %}
-                                        <select id="Certification_Type" name="Certification_Type" 
-                                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                                            <option value="Lite" {% if details['Certification_Type']=='Lite'%}selected{% endif %}>Lite</option>
-                                            <option value="Detailed" {% if details['Certification_Type']=='Detailed'%}selected{% endif %}>Detailed</option>
-                                        </select>
-                                    {% elif key == 'ISV_Start_Date' or key == 'ISV_End_Date' %}
-                                        <input type="date" id="{{ key }}" name="{{ key }}" value="{{ value if value is not none else '' }}"
-                                               class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                                    {% elif key == 'Status' %}
-                                        <select id="{{ key }}" name="{{ key }}"
-                                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                                            <option value="Not-started" {% if value == 'Not-started' %}selected{% endif %}>Not-started</option>
-                                            <option value="On-Hold" {% if value == 'On-Hold' %}selected{% endif %}>On-Hold</option>
-                                            <option value="In-Progress" {% if value == 'In-Progress' %}selected{% endif %}>In-Progress</option>
-                                            <option value="Completed" {% if value == 'Completed' %}selected{% endif %}>Completed</option>
-                                        </select>
-                                    {% else %}
-                                        {{ value if value else "" }}
-                                    {% endif %}
+                                    <input type="text" id="{{ field }}" name="{{ field }}"
+                                           value="{{ details[field] if details[field] is not none else '' }}"
+                                           class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
                                 </div>
                             </div>
-                            {% endif %}
                         {% endfor %}
                     </div>
                 </div>

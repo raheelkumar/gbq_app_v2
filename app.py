@@ -84,6 +84,7 @@ def tracker():
     counts_query = f"""
     SELECT
         COUNT(CASE WHEN status = 'not started' THEN 1 END) as inactive_count,
+        COUNT(CASE WHEN status = 'on hold' THEN 1 END) as hold_count,
         COUNT(CASE WHEN status = 'in progress' THEN 1 END) as in_progress_count,
         COUNT(CASE WHEN status = 'Completed' THEN 1 END) as completed_count
     FROM `{dataset_id}.{new_table_id}`
@@ -106,6 +107,7 @@ def tracker():
 
     return render_template('tracker.html',
                            inactive_count=counts_result.inactive_count or 0,
+                           hold_count=counts_result.hold_count or 0,
                            in_progress_count=counts_result.in_progress_count or 0,
                            completed_count=counts_result.completed_count or 0,
                            recent_activities=recent_activities)
@@ -650,17 +652,20 @@ def isv_history_with_filter():
     except Exception as e:
         return f"An error occurred: {e}"
 
-
 @app.route("/most_recent_isvs", methods=["GET"])
 def most_recent_isvs():
-    # Base query to get the most recent ISVs (sorted by ISV_Start_Date descending)
-    query = """
+    # Calculate the current quarter and year
+    current_year = datetime.now().year
+    current_quarter = f"Q{((datetime.now().month - 1) // 3) + 1}"
+
+    # Base query to fetch data for the most recent quarter
+    query = f"""
     SELECT Sr_No, Tool_Name, Domain, Certification_Type, Version, Description, Team_Members, Year, Quarter, YearQuarter, POC, ISV_Start_Date, ISV_End_Date, Status, Percentage, Comments, Assessment_Sheet, Questions_Doc
     FROM `wwbq-treasuredata.GBQ.ISV_Details`
-    WHERE Tool_Name IS NOT NULL
+    WHERE Tool_Name IS NOT NULL AND Year = {current_year} AND Quarter = '{current_quarter}'
     ORDER BY ISV_Start_Date DESC
-    LIMIT 10
     """
+
     try:
         # Execute the query to get the most recent ISVs
         query_job = client.query(query)
@@ -693,21 +698,28 @@ def most_recent_isvs():
 
         # Fetch distinct years and quarters to populate the dropdown
         distinct_query = """
-        SELECT DISTINCT Year, Quarter FROM `wwbq-treasuredata.GBQ.ISV_Details`
+        SELECT DISTINCT Year, Quarter
+        FROM `wwbq-treasuredata.GBQ.ISV_Details`
         """
         distinct_query_job = client.query(distinct_query)
         distinct_results = list(distinct_query_job.result())
-        years = sorted({row["Year"] for row in distinct_results})
+
+        # Include current year if not present
+        years = sorted({str(row["Year"]) for row in distinct_results})
+        current_year = str(datetime.now().year)
+        if current_year not in years:
+            years.append(current_year)
+        years = sorted(years)
         quarters = sorted({row["Quarter"] for row in distinct_results})
 
-        # Render the same template with the most recent ISVs
+        # Render the template with the filtered data
         return render_template(
             "isv_history_with_filter.html",
             data=isv_details,
             years=years,
             quarters=quarters,
-            selected_quarter="",
-            selected_year="",
+            selected_quarter=current_quarter,
+            selected_year=str(current_year),
         )
     except Exception as e:
         return f"An error occurred: {e}"
@@ -1097,20 +1109,6 @@ def logins():
 
 #vinnet and Anurag's code
 
-# Cache for ISV data
-ISV_CACHE = []
-def load_isv_data():
-   """Load data from BigQuery into a cache."""
-   global ISV_CACHE
-   query = """
-       SELECT Tool_Name, Domain, YearQuarter, Status
-       FROM `wwbq-treasuredata.GBQ.ISV_Details`
-       ORDER BY ISV_Start_Date DESC
-   """
-   query_job = client.query(query)
-   results = query_job.result()
-   ISV_CACHE = [{"Tool_Name": row["Tool_Name"], "Domain": row["Domain"], "YearQuarter": row["YearQuarter"], "Status": row["Status"]} for row in results]
-
 def get_domains():
     query=f"""SELECT DISTINCT Domain FROM `wwbq-treasuredata.GBQ.ISV_Details`"""
     query_job = client.query(query)
@@ -1118,135 +1116,202 @@ def get_domains():
     domains = [row.Domain for row in results]
     return domains
 
+# Cache for ISV data
+ISV_CACHE = []
+
+def load_isv_data():
+    """Load data from BigQuery into a cache."""
+    global ISV_CACHE
+    query = """
+        SELECT Sr_No, Tool_Name, Domain, YearQuarter, Status
+        FROM `wwbq-treasuredata.GBQ.ISV_Details`
+        ORDER BY ISV_Start_Date DESC
+    """
+    query_job = client.query(query)
+    results = query_job.result()
+    ISV_CACHE = []
+    for row in results:
+        isv_dict = dict(row.items())
+        ISV_CACHE.append(isv_dict)
+
 @app.route('/list')
 def list_isv():
-   global ISV_CACHE
-   load_isv_data()
-   search_term = request.args.get('search', '').lower()
-   yearquarter_filter = request.args.get('yearquarter', '')
-   status_filter = request.args.get('status', '')
-   page = int(request.args.get('page', 1))
-   items_per_page = 10
-   # Filter data based on YearQuarter and Status if specified
-   filtered_data = [
-       item for item in ISV_CACHE
-       if (search_term in item["Tool_Name"].lower() or search_term in item["Domain"].lower()) and
-          (not yearquarter_filter or item["YearQuarter"] == yearquarter_filter) and
-          (not status_filter or item["Status"] == status_filter)
-   ]
-   total_items = len(filtered_data)
-   total_pages = (total_items + items_per_page - 1) // items_per_page
-   start_index = (page - 1) * items_per_page
-   end_index = start_index + items_per_page
-   paginated_data = filtered_data[start_index:end_index]
-   # Get distinct YearQuarter and Status values
-   yearquarters = list(set(item["YearQuarter"] for item in ISV_CACHE))
-   statuses = list(set(item["Status"] for item in ISV_CACHE))
-   return render_template(
-       'isv_list.html',
-       isvs=paginated_data,
-       total_pages=total_pages,
-       current_page=page,
-       yearquarters=yearquarters,
-       statuses=statuses
-   )
+    global ISV_CACHE
+    load_isv_data()
+    search_term = request.args.get('search', '').lower()
+    yearquarter_filter = request.args.get('yearquarter', '')
+    status_filter = request.args.get('status', '')
+    page = int(request.args.get('page', 1))
+    items_per_page = 10
 
-DATASET_ID = "GBQ"
-TABLE_ID = "ISV_Details"
-@app.route('/details/<tool_name>', methods=['GET'])
-def details(tool_name):
-   table_ref = f"{client.project}.{DATASET_ID}.{TABLE_ID}"
-   query = f"SELECT * FROM `{table_ref}` WHERE Tool_Name = @tool_name"
-   job_config = bigquery.QueryJobConfig(
-       query_parameters=[
-           bigquery.ScalarQueryParameter("tool_name", "STRING", tool_name)
-       ]
-   )
-   results = list(client.query(query, job_config=job_config))
-   details = results[0] if results else None
-   return render_template('isv_details.html', details=details)
+    # Filter data based on search term, YearQuarter and Status
+    filtered_data = [
+        item for item in ISV_CACHE
+        if (search_term in item["Tool_Name"].lower() or search_term in item["Domain"].lower()) and
+           (not yearquarter_filter or item["YearQuarter"] == yearquarter_filter) and
+           (not status_filter or item["Status"] == status_filter)
+    ]
 
-@app.route('/edit/<tool_name>', methods=['GET', 'POST'])
-def edit(tool_name):
-   domain_options = get_domains()
-   table_ref = f"{client.project}.{DATASET_ID}.{TABLE_ID}"
-   if request.method == 'GET':
-       # Fetch the current details for the specified tool
-       query = f"SELECT * FROM `{table_ref}` WHERE Tool_Name = @tool_name"
-       job_config = bigquery.QueryJobConfig(
-           query_parameters=[bigquery.ScalarQueryParameter("tool_name", "STRING", tool_name)]
-       )
-       results = list(client.query(query, job_config=job_config))
-       details = results[0] if results else None
-       # Exclude Sr_No from the details
-       if details and "Sr_No" in details:
-           details.pop("Sr_No", None)
-       return render_template('edit.html', details=details,domain_options=domain_options)
-   elif request.method == 'POST':
-       # Get the form data
-       data = request.form.to_dict()
-       # Remove Sr_No and Tool_Name from the data (if present)
-       data.pop("Sr_No", None)
-       data.pop("Tool_Name", None)  # Exclude Tool_Name from the SET clause
-       del data["New_Domain"]
-       # Construct the update query dynamically
-       if request.form.get('New_Domain'):
-        new_domain=request.form.get('New_Domain')
-        del data["New_Domain"]
-        data['Domain']=new_domain
-       date = str(data['ISV_Start_Date'])
-       date_obj=datetime.strptime(date,'%Y-%m-%d')
-       year = date_obj.year
-       month = date_obj.month
-       quarter = ""
-       if 1<= month <=3:
-           quarter="Q1"
-       elif 4<=month<=6:
-           quarter="Q2"
-       elif 7<=month<=9:
-           quarter="Q3"
-       else:
-           quarter="Q4"
-       YearQuarter = "FY"+str(year)+quarter
-       data['YearQuarter']=YearQuarter
-       update_query = f"""
-           UPDATE `{table_ref}`
-           SET {', '.join([f"{key} = @{key}" for key in data.keys()])}
-           WHERE Tool_Name = @tool_name
-       """
-       # Handle BigQuery data types based on schema
-       query_parameters = []
-       for key, value in data.items():
-           if key in ["Year"]:  # INT64 fields
-               query_parameters.append(bigquery.ScalarQueryParameter(key, "INT64", int(value)))
-           elif key in ["Percentage"]:  # NUMERIC fields
-               query_parameters.append(bigquery.ScalarQueryParameter(key, "NUMERIC", float(value)))
-           elif key in ["ISV_Start_Date", "ISV_End_Date"]:  # DATE fields
-               query_parameters.append(bigquery.ScalarQueryParameter(key, "DATE", value))
-           else:  # Default to STRING
-               query_parameters.append(bigquery.ScalarQueryParameter(key, "STRING", value))
-       # Add tool_name for the WHERE clause
-       query_parameters.append(bigquery.ScalarQueryParameter("tool_name", "STRING", tool_name))
-       # Execute the update query
-       job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
-       client.query(update_query, job_config=job_config).result()
-       flash("Details updated successfully!","success")
-       return redirect(url_for('details',tool_name=tool_name))
+    total_items = len(filtered_data)
+    total_pages = (total_items + items_per_page - 1) // items_per_page
+    start_index = (page - 1) * items_per_page
+    end_index = start_index + items_per_page
+    paginated_data = filtered_data[start_index:end_index]
 
-@app.route('/delete_isv/<tool_name>', methods=['DELETE'])
-def delete_tool(tool_name):
-    """Delete a tool from BigQuery."""
-    print(tool_name)
-    table_ref = f"{client.project}.{DATASET_ID}.{TABLE_ID}"
-    delete_query = f"DELETE FROM `{table_ref}` WHERE Tool_Name = @tool_name"
-    job_config = bigquery.QueryJobConfig(
-        query_parameters=[bigquery.ScalarQueryParameter("tool_name", "STRING", tool_name)]
+    # Get distinct YearQuarter and Status values
+    yearquarters = list(set(item["YearQuarter"] for item in ISV_CACHE))
+    statuses = list(set(item["Status"] for item in ISV_CACHE))
+
+    return render_template(
+        'isv_list.html',
+        isvs=paginated_data,
+        total_pages=total_pages,
+        current_page=page,
+        yearquarters=yearquarters,
+        statuses=statuses
     )
+
+@app.route('/details/<int:sr_no>', methods=['GET'])
+def details(sr_no):
+    table_ref = f"{client.project}.{DATASET_ID}.{TABLE_ID}"
+    query = f"SELECT * FROM `{table_ref}` WHERE Sr_No = @sr_no"
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("sr_no", "INT64", sr_no)
+        ]
+    )
+    results = list(client.query(query, job_config=job_config))
+    details = results[0] if results else None
+    return render_template('isv_details.html', details=details)
+
+
+@app.route('/edit/<int:sr_no>', methods=['GET', 'POST'])
+def edit(sr_no):
+    domain_options = get_domains()
+    table_ref = f"{client.project}.{dataset_id}.{new_table_id}"
+
+    if request.method == 'GET':
+        query = f"""
+        SELECT *
+        FROM `{table_ref}`
+        WHERE Sr_No = @sr_no
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("sr_no", "INT64", sr_no)
+            ]
+        )
+        results = list(client.query(query, job_config=job_config))
+        details = dict(results[0].items()) if results else None
+
+        if not details:
+            flash("ISV not found.", "error")
+            return redirect(url_for('list_isv'))
+
+        return render_template('edit.html', details=details, domain_options=domain_options)
+
+    elif request.method == 'POST':
+        # Get the form data
+        data = request.form.to_dict()
+
+        # Handle new domain if specified
+        if data.get('New_Domain'):
+            new_domain = data.get('New_Domain')
+            data['Domain'] = new_domain
+        if 'New_Domain' in data:
+            del data['New_Domain']
+
+        # Calculate YearQuarter based on ISV_Start_Date
+        if data.get('ISV_Start_Date'):
+            date_obj = datetime.strptime(data['ISV_Start_Date'], '%Y-%m-%d')
+            year = date_obj.year
+            month = date_obj.month
+            quarter = f"Q{((month - 1) // 3) + 1}"
+            data['Year'] = year
+            data['Quarter'] = quarter
+            data['YearQuarter'] = f"FY{year}{quarter}"
+
+            # Construct the update query dynamically
+            query_parameters = []
+            set_clauses = []  # Initialize set_clauses list
+            for key, value in data.items():
+                if key in ["Year"]:  # INT64 fields
+                    set_clauses.append(f"{key} = @{key}")
+                    query_parameters.append(bigquery.ScalarQueryParameter(key, "INT64", int(value)))
+                elif key in ["Percentage"]:  # NUMERIC fields
+                    set_clauses.append(f"{key} = @{key}")
+                    query_parameters.append(bigquery.ScalarQueryParameter(key, "NUMERIC", float(value)))
+                elif key in ["ISV_Start_Date"]:  # Always include ISV_Start_Date if present
+                    set_clauses.append(f"{key} = @{key}")
+                    query_parameters.append(bigquery.ScalarQueryParameter(key, "DATE", value))
+                elif key in ["ISV_End_Date"]:  # Include ISV_End_Date only if it's valid
+                    if value and value.strip():  # Check if value exists and is not just whitespace
+                        try:
+                            # Try to parse the date to ensure it's valid
+                            datetime.strptime(value, '%Y-%m-%d')
+                            set_clauses.append(f"{key} = @{key}")
+                            query_parameters.append(bigquery.ScalarQueryParameter(key, "DATE", value))
+                        except ValueError:
+                            # If date parsing fails, don't include in update
+                            continue
+                else:  # Default to STRING fields
+                    set_clauses.append(f"{key} = @{key}")
+                    query_parameters.append(bigquery.ScalarQueryParameter(key, "STRING", value))
+            # Add Sr_No parameter outside the loop
+            query_parameters.append(bigquery.ScalarQueryParameter("Sr_No", "INTEGER", sr_no))
+            # Construct the query string
+            update_query = f"""
+                  UPDATE `{table_ref}`
+                  SET {', '.join(set_clauses)}
+                  WHERE Sr_No = @Sr_No
+              """
+
+        try:
+            # Execute the update query
+            job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
+            client.query(update_query, job_config=job_config).result()
+            flash("Details updated successfully!", "success")
+            return redirect(url_for('details', Sr_No=sr_no))
+        except Exception as e:
+            flash(f"Error updating ISV: {str(e)}", "error")
+            return render_template('edit.html', details=data, domain_options=domain_options)
+
+
+@app.route('/delete_isv/<int:sr_no>', methods=['DELETE'])
+def delete_tool(sr_no):
+    """Delete an ISV and its related tasks from BigQuery."""
+    table_ref = f"{client.project}.{dataset_id}.{new_table_id}"
+    tasks_table_ref = f"{client.project}.{dataset_id}.isv_tasks_new"
+
     try:
-        # Execute the delete query
-        query_job = client.query(delete_query, job_config=job_config)
-        query_job.result()  # Wait for completion
-        return jsonify({"message": "Tool deleted successfully!"}), 200
+        # First delete related tasks
+        delete_tasks_query = f"""
+        DELETE FROM `{tasks_table_ref}`
+        WHERE Sr_No = @sr_no
+        """
+
+        # Then delete the ISV
+        delete_isv_query = f"""
+        DELETE FROM `{table_ref}`
+        WHERE Sr_No = @sr_no
+        """
+
+        # Configure job parameters
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("sr_no", "INT64", sr_no)
+            ]
+        )
+
+        # Execute delete tasks query
+        tasks_query_job = client.query(delete_tasks_query, job_config=job_config)
+        tasks_query_job.result()  # Wait for completion
+
+        # Execute delete ISV query
+        isv_query_job = client.query(delete_isv_query, job_config=job_config)
+        isv_query_job.result()  # Wait for completion
+
+        return jsonify({"message": "ISV and related tasks deleted successfully!"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

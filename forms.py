@@ -32,8 +32,8 @@ class ISVForm(FlaskForm):
 
     certification_type = SelectField('Certification Type',
                                    choices=[
-                                       ('lite', 'Lite'),
-                                       ('detailed', 'Detailed'),
+                                       ('Lite', 'Lite'),
+                                       ('Detailed', 'Detailed'),
                                    ],
                                    validators=[DataRequired()])
 
@@ -61,6 +61,7 @@ class ISVForm(FlaskForm):
     status = SelectField('Status',
                         choices=[
                             ('not started', 'Not Started'),
+                            ('on hold', 'On Hold'),
                             ('in progress', 'In Progress'),
                             ('Completed', 'Completed')
                         ],
