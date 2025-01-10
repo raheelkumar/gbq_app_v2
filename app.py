@@ -157,8 +157,8 @@ def add_isv():
                 max_srno_result = list(client.query(max_srno_query).result())[0]
                 next_srno = (max_srno_result.max_srno or 0) + 1
 
-                # Join multiple domains with commas
-                domains = ','.join(form.domain.data) if isinstance(form.domain.data, list) else form.domain.data
+                # Join multiple domains with plus
+                domains = ' + '.join(form.domain.data) if isinstance(form.domain.data, list) else form.domain.data
 
                 # Calculate Year, Quarter, and YearQuarter from start_date
                 start_date = form.start_date.data

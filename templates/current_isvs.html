@@ -23,7 +23,7 @@
 
                             <!-- Domains Tags -->
                             <div class="flex flex-wrap gap-2">
-                                {% for domain in isv['domain'].split(',') %}
+                                {% for domain in isv['domain'].split('+') %}
                                 <span class="inline-block bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-sm font-medium border border-blue-100">
                                     {{ domain.strip() }}
                                 </span>
