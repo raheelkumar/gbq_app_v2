@@ -1,291 +1,213 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ISV List</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-<style>
-   body {
-       font-family: Arial, sans-serif;
-       margin: 0;
-       padding: 0;
-       background-color: #f4f4f9;
-       color: #333;
-   }
-   header {
-       background-color: #007bff;
-       color: white;
-       padding: 1rem;
-       text-align: center;
-   }
-   .container {
-       width: 80%;
-       margin: 2rem auto;
-       padding: 2rem;
-       background-color: white;
-       border-radius: 8px;
-       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-   }
-   h2 {
-       text-align: center;
-       color: #007bff;
-   }
-   .filter-container {
-       display: flex;
-       justify-content: space-between;
-       margin-bottom: 20px;
-       align-items: center;
-   }
-   .filter-container input, .filter-container select, .filter-container button {
-       padding: 10px;
-       margin-right: 10px;
-       border-radius: 5px;
-       border: 1px solid #ccc;
-   }
-   .filter-container select {
-       width: 25%;
-   }
-   .filter-container input {
-       width: 35%;
-   }
-   .filter-container button {
-       background-color: #007bff;
-       color: white;
-       cursor: pointer;
-   }
-   .filter-container button:hover {
-       background-color: #0056b3;
-   }
-   .table-container {
-       overflow-x: auto;
-   }
-   table {
-       width: 100%;
-       border-collapse: collapse;
-       margin-top: 20px;
-   }
-   table, th, td {
-       border: 1px solid #ddd;
-   }
-   th, td {
-       padding: 10px;
-       text-align: left;
-   }
-   th {
-       background-color: #f1f1f1;
-   }
-   td {
-       background-color: #fafafa;
-   }
-   .back-btn {
-       display: inline-block;
-       margin-top: 20px;
-       padding: 10px 20px;
-       background-color: #007bff;
-       color: white;
-       text-decoration: none;
-       border-radius: 5px;
-       font-weight: bold;
-   }
-   .back-btn:hover {
-       background-color: #0056b3;
-   }
-   .pagination {
-       text-align: center;
-       margin-top: 20px;
-   }
-   .pagination a {
-       padding: 8px 12px;
-       margin: 0 4px;
-       background-color: #007bff;
-       color: white;
-       text-decoration: none;
-       border-radius: 5px;
-   }
-   .pagination a:hover {
-       background-color: #0056b3;
-   }
-   .pagination .active {
-       background-color: #0056b3;
-   }
-     .action-btn {
-           background: none;
-           border: none;
-           cursor: pointer;
-           margin: 0 5px;
-       }
-       .action-btn i {
-           font-size: 18px;
-           color: #007bff;
-       }
-       .action-btn i:hover {
-           color: #0056b3;
-       }
-       .fa-pencil-alt:before {
-    color: #FFC107;
-}
-    .fa-trash:before {
-    color: #D43F2F;
-}
-</style>
-</head>
-<body>
-<header>
-<h1>ISV List</h1>
-</header>
-<div class="container">
-<h2>Available ISVs</h2>
-<!-- Filter section with all elements in the same line -->
-<div class="filter-container">
-<!-- YearQuarter filter -->
-<select id="yearQuarterFilter">
-<option value="">Select YearQuarter</option>
-       {% for yearquarter in yearquarters %}
-<option value="{{ yearquarter }}" {% if request.args.get('yearquarter') == yearquarter %}selected{% endif %}>{{ yearquarter }}</option>
-       {% endfor %}
-</select>
-<!-- Status filter -->
-<select id="statusFilter">
-<option value="">Select Status</option>
-       {% for status in statuses %}
-<option value="{{ status }}" {% if request.args.get('status') == status %}selected{% endif %}>{{ status }}</option>
-       {% endfor %}
-</select>
-<!-- Search bar -->
-<input type="text" id="search" placeholder="Search ISV by name or domain" value="{{ request.args.get('search', '') }}" />
-<!-- Search button -->
-<button id="search-btn">Search</button>
-<!-- Reset filters button -->
-<button id="reset-filters-btn">Reset Filters</button>
+{% extends "base.html" %}
+{% block title %}ISV List{% endblock %}
+
+{% block content %}
+<div class="min-h-screen space-y-8">
+    <div class="bg-white rounded-lg shadow-md p-8">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">Available ISVs</h1>
+
+        <!-- Filters Section -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <select id="yearQuarterFilter" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                <option value="">Select YearQuarter</option>
+                {% for yearquarter in yearquarters %}
+                    <option value="{{ yearquarter }}" {% if request.args.get('yearquarter') == yearquarter %}selected{% endif %}>{{ yearquarter }}</option>
+                {% endfor %}
+            </select>
+
+            <select id="statusFilter" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                <option value="">Select Status</option>
+                {% for status in statuses %}
+                    <option value="{{ status }}" {% if request.args.get('status') == status %}selected{% endif %}>{{ status }}</option>
+                {% endfor %}
+            </select>
+
+            <input type="text" id="search" placeholder="Search ISV by name or domain" 
+                   value="{{ request.args.get('search', '') }}"
+                   class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+
+            <button id="search-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Search
+            </button>
+
+            <button id="reset-filters-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                Reset Filters
+            </button>
+        </div>
+
+        <!-- Table Section -->
+        <div class="flex flex-col">
+            <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                    <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ISV Name</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">YearQuarter</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for isv in isvs %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ isv.Tool_Name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ isv.Domain }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ isv.YearQuarter }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            {% if isv.Status == 'Completed' %}
+                                                bg-green-100 text-green-800
+                                            {% elif isv.Status == 'In-Progress' %}
+                                                bg-yellow-100 text-yellow-800
+                                            {% else %}
+                                                bg-gray-100 text-gray-800
+                                            {% endif %}">
+                                            {{ isv.Status }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
+                                        <button onclick="window.location.href='/details/{{ isv.Tool_Name }}'" 
+                                                class="text-blue-600 hover:text-blue-900">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                        </button>
+                                        <button onclick="window.location.href='/edit/{{ isv.Tool_Name }}'"
+                                                class="text-yellow-600 hover:text-yellow-900">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                        </button>
+                                        <button onclick="deleteTool('{{ isv.Tool_Name }}')"
+                                                class="text-red-600 hover:text-red-900">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination Section -->
+        {% if total_pages > 1 %}
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4">
+            <div class="flex-1 flex justify-center">
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    {% if current_page > 1 %}
+                    <a href="/list?page={{ current_page - 1 }}&search={{ request.args.get('search', '') }}&yearquarter={{ request.args.get('yearquarter', '') }}&status={{ request.args.get('status', '') }}"
+                       class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        Previous
+                    </a>
+                    {% endif %}
+
+                    {% for page_num in range(1, total_pages + 1) %}
+                    <a href="/list?page={{ page_num }}&search={{ request.args.get('search', '') }}&yearquarter={{ request.args.get('yearquarter', '') }}&status={{ request.args.get('status', '') }}"
+                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium 
+                              {% if page_num == current_page %}
+                                text-blue-600 bg-blue-50
+                              {% else %}
+                                text-gray-700 hover:bg-gray-50
+                              {% endif %}">
+                        {{ page_num }}
+                    </a>
+                    {% endfor %}
+
+                    {% if current_page < total_pages %}
+                    <a href="/list?page={{ current_page + 1 }}&search={{ request.args.get('search', '') }}&yearquarter={{ request.args.get('yearquarter', '') }}&status={{ request.args.get('status', '') }}"
+                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        Next
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Back to Home Button -->
+<!--        <div class="mt-6">-->
+<!--            <a href="{{ url_for('index') }}" -->
+<!--               class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">-->
+<!--                Back to Home-->
+<!--            </a>-->
+<!--        </div>-->
+    </div>
 </div>
-<!-- Table with ISVs -->
-<div class="table-container">
-<div class="spinner" id="loading-spinner"></div>
-<table id="isv-table">
-<thead>
-<tr>
-<th>ISV Name</th>
-<th>Domain</th>
-<th>YearQuarter</th>
-<th>Status</th>
-    <th>Actions</th>
-</tr>
-</thead>
-<tbody>
-       {% for isv in isvs %}
-<tr>
-<td><a>{{ isv.Tool_Name }}</a></td>
-<td>{{ isv.Domain }}</td>
-<td>{{ isv.YearQuarter }}</td>
-<td>{{ isv.Status }}</td>
-    <td>
-<!-- View Button -->
-<button class="action-btn view-btn" onclick="window.location.href='/details/{{ isv.Tool_Name }}'">
-<i class="fas fa-eye"></i>
-</button>
-<!-- Edit Button -->
-<button class="action-btn edit-btn" onclick="window.location.href='/edit/{{ isv.Tool_Name }}'">
-<i class="fas fa-pencil-alt"></i>
-</button>
-<!-- Delete Button -->
-<button class="action-btn delete-btn" onclick="deleteTool('{{ isv.Tool_Name }}')">
-<i class="fas fa-trash"></i>
-</button>
-</td>
-</tr>
-       {% endfor %}
-</tbody>
-</table>
-</div>
-<!-- Pagination -->
-<div class="pagination">
-   {% if total_pages > 1 %}
-<!-- Previous Page Link -->
-   {% if current_page > 1 %}
-<a href="/list?page={{ current_page - 1 }}&search={{ request.args.get('search', '') }}&yearquarter={{ request.args.get('yearquarter', '') }}&status={{ request.args.get('status', '') }}">Previous</a>
-   {% endif %}
-<!-- Page Numbers -->
-   {% for page_num in range(1, total_pages + 1) %}
-<a href="/list?page={{ page_num }}&search={{ request.args.get('search', '') }}&yearquarter={{ request.args.get('yearquarter', '') }}&status={{ request.args.get('status', '') }}"
-      class="{{ 'active' if page_num == current_page else '' }}">{{ page_num }}</a>
-   {% endfor %}
-<!-- Next Page Link -->
-   {% if current_page < total_pages %}
-<a href="/list?page={{ current_page + 1 }}&search={{ request.args.get('search', '') }}&yearquarter={{ request.args.get('yearquarter', '') }}&status={{ request.args.get('status', '') }}">Next</a>
-   {% endif %}
-   {% endif %}
-</div>
-<a href="{{ url_for('index') }}" class="back-btn">Back to Home</a>
-</div>
+
 <script>
-   // Search functionality triggered by button click
-   document.getElementById('search-btn').addEventListener('click', function () {
-       const query = document.getElementById('search').value;
-       const yearQuarter = document.getElementById('yearQuarterFilter').value;
-       const status = document.getElementById('statusFilter').value;
-       window.location.href = '/list?search=' + encodeURIComponent(query) + '&yearquarter=' + encodeURIComponent(yearQuarter) + '&status=' + encodeURIComponent(status);
-   });
-   // Reset Filters functionality triggered by reset button click
-   document.getElementById('reset-filters-btn').addEventListener('click', function () {
-       window.location.href = '/list';
-   });
-   // Trigger search when Enter key is pressed
-   document.getElementById('search').addEventListener('keypress', function (event) {
-       if (event.key === 'Enter') {
-           const query = document.getElementById('search').value;
-           const yearQuarter = document.getElementById('yearQuarterFilter').value;
-           const status = document.getElementById('statusFilter').value;
-           window.location.href = '/list?search=' + encodeURIComponent(query) + '&yearquarter=' + encodeURIComponent(yearQuarter) + '&status=' + encodeURIComponent(status);
-       }
-   });
-   // Update filters when dropdowns are changed
-   document.getElementById('yearQuarterFilter').addEventListener('change', function () {
-       document.getElementById('search-btn').click();
-   });
-   document.getElementById('statusFilter').addEventListener('change', function () {
-       document.getElementById('search-btn').click();
-   });
-     function deleteTool(toolName) {
-           if (confirm(`Are you sure you want to delete the tool "${toolName}"?`)) {
-               fetch(`/delete_isv/${toolName}`, { method: 'DELETE' })
-                   .then(response => response.json())
-                   .then(data => {
-                       if (data.message) {
-                           alert(data.message);
-                           location.reload(); // Reload the page to reflect changes
-                       } else {
-                           alert("Failed to delete the tool: " + data.error);
-                       }
-                   })
-                   .catch(error => {
-                       console.error("Error deleting tool:", error);
-                       alert("An error occurred while deleting the tool.");
-                   });
-           }
-       }
-// Ensure that the yearquarter filter is populated and sorted when the page loads
-  document.addEventListener('DOMContentLoaded', function() {
-      const yearQuarterSelect = document.getElementById('yearQuarterFilter');
-      // Extract the options as an array of option elements
-      const options = Array.from(yearQuarterSelect.options).slice(1);  // Skip the first option (Select YearQuarter)
-      // Sort the options based on the year and quarter (FYyyyyQx)
-      options.sort((a, b) => {
-          const aYear = parseInt(a.value.slice(2, 6));  // Extract year part
-          const aQuarter = parseInt(a.value.slice(7));  // Extract quarter part
-          const bYear = parseInt(b.value.slice(2, 6));  // Extract year part
-          const bQuarter = parseInt(b.value.slice(7));  // Extract quarter part
-          // Compare first by year, then by quarter (descending order)
-          if (aYear === bYear) {
-              return bQuarter - aQuarter;  // Sort by quarter if years are the same
-          }
-          return bYear - aYear;  // Sort by year
-      });
-      // Append the sorted options back to the select element
-      options.forEach(option => yearQuarterSelect.appendChild(option));
-  });
+    // Search functionality
+    document.getElementById('search-btn').addEventListener('click', function() {
+        const query = document.getElementById('search').value;
+        const yearQuarter = document.getElementById('yearQuarterFilter').value;
+        const status = document.getElementById('statusFilter').value;
+        window.location.href = '/list?search=' + encodeURIComponent(query) + 
+                             '&yearquarter=' + encodeURIComponent(yearQuarter) + 
+                             '&status=' + encodeURIComponent(status);
+    });
+
+    // Reset Filters
+    document.getElementById('reset-filters-btn').addEventListener('click', function() {
+        window.location.href = '/list';
+    });
+
+    // Search on Enter key
+    document.getElementById('search').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            document.getElementById('search-btn').click();
+        }
+    });
+
+    // Auto-update on filter change
+    ['yearQuarterFilter', 'statusFilter'].forEach(function(id) {
+        document.getElementById(id).addEventListener('change', function() {
+            document.getElementById('search-btn').click();
+        });
+    });
+
+    // Delete Tool
+    function deleteTool(toolName) {
+        if (confirm(`Are you sure you want to delete the tool "${toolName}"?`)) {
+            fetch(`/delete_isv/${toolName}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert("Failed to delete the tool: " + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error deleting tool:", error);
+                    alert("An error occurred while deleting the tool.");
+                });
+        }
+    }
+
+    // Sort YearQuarter options
+    document.addEventListener('DOMContentLoaded', function() {
+        const yearQuarterSelect = document.getElementById('yearQuarterFilter');
+        const options = Array.from(yearQuarterSelect.options).slice(1);
+        options.sort((a, b) => {
+            const aYear = parseInt(a.value.slice(2, 6));
+            const aQuarter = parseInt(a.value.slice(7));
+            const bYear = parseInt(b.value.slice(2, 6));
+            const bQuarter = parseInt(b.value.slice(7));
+            if (aYear === bYear) {
+                return bQuarter - aQuarter;
+            }
+            return bYear - aYear;
+        });
+        options.forEach(option => yearQuarterSelect.appendChild(option));
+    });
 </script>
-</body>
-</html>
-
-
+{% endblock %}

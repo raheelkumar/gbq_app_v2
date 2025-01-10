@@ -1,140 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ISV Details</title>
-<style>
-       body {
-           font-family: Arial, sans-serif;
-           background-color: #f4f4f9;
-           color: #333;
-           margin: 0;
-           padding: 0;
-       }
-       header {
-           background-color: #007bff;
-           color: white;
-           padding: 1rem;
-           text-align: center;
-       }
-       .container {
-           width: 80%;
-           margin: 2rem auto;
-           background: #fff;
-           border-radius: 8px;
-           box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-           padding: 20px;
-       }
-       .tool-header {
-           display: flex;
-           justify-content: space-between;
-           align-items: center;
-           margin-bottom: 20px;
-       }
-       .tool-name {
-           font-size: 1.5rem;
-           font-weight: bold;
-       }
-       .btn-container {
-           display: flex;
-           gap: 10px;
-       }
-       .btn {
-           padding: 10px 20px;
-           text-decoration: none;
-           color: white;
-           border-radius: 5px;
-           cursor: pointer;
-           font-size: 0.9rem;
-       }
-       .edit-btn {
-           background-color: #28a745;
-       }
-       .edit-btn:hover {
-           background-color: #218838;
-       }
-       .back-btn {
-           background-color: #dc3545;
-       }
-       .back-btn:hover {
-           background-color: #c82333;
-       }
-       table {
-           width: 100%;
-           border-collapse: collapse;
-           margin-top: 20px;
-       }
-       th, td {
-           border: 1px solid #ddd;
-           padding: 10px;
-           text-align: left;
-       }
-       th {
-           background-color: #f1f1f1;
-       }
-       .alert {
-           padding: 10px;
-           margin-bottom: 15px;
-           border-radius: 4px;
-       }
-       .alert-success {
-           background-color: #d4edda;
-           color: #155724;
-       }
-       .alert-error {
-           background-color: #f8d7da;
-           color: #721c24;
-       }
-</style>
-</head>
-<body>
-<header>
-<h1>ISV Details</h1>
-</header>
-<div class="container">
-   {% with messages = get_flashed_messages(with_categories=true) %}
-       {% if messages %}
-           {% for category, message in messages %}
-<div class="alert alert-{{ category }}">
-                   {{ message }}
-</div>
-           {% endfor %}
-       {% endif %}
-   {% endwith %}
-   {% if details %}
-<div class="tool-header">
-<div class="tool-name">{{ details.Tool_Name }}</div>
-<div class="btn-container">
-<a class="edit-btn btn" href="/edit/{{ details.Tool_Name }}">Edit</a>
-<a class="back-btn btn" href="/list">Back to List</a>
-</div>
-</div>
-<table>
-<tr>
-<th>Key</th>
-<th>Value</th>
-</tr>
-       {% for key, value in details.items() %}
-    {% if key!='Sr_No' and key!='Year' and key!='Quarter' %}
-<tr>
-<td>{{ key }}</td>
-<td>
-               {% if "Doc" in key or "Sheet" in key %}
-                   {% if value and value != 'None' %}
-<a href="{{ value }}" target="_blank">Click here to open</a>
-                   {% endif %}
-               {% else %}
-                   {{ value if value else "" }}
-               {% endif %}
-</td>
-</tr>
+{% extends "base.html" %}
+{% block title %}ISV Details{% endblock %}
+
+{% block content %}
+<div class="min-h-screen space-y-8">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="rounded-md {{ 'bg-green-50' if category == 'success' else 'bg-red-50' }} p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            {% if category == 'success' %}
+                                <svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            {% else %}
+                                <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                            {% endif %}
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium {{ 'text-green-800' if category == 'success' else 'text-red-800' }}">
+                                {{ message }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if details %}
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-gray-900">{{ details.Tool_Name }}</h3>
+                <div class="space-x-4">
+                    <a href="/edit/{{ details.Tool_Name }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Edit
+                    </a>
+                    <a href="/list" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        Back to List
+                    </a>
+                </div>
+            </div>
+            <div class="border-t border-gray-200">
+                <dl>
+                    {% for key, value in details.items() %}
+                        {% if key != 'Sr_No' and key != 'Year' and key != 'Quarter' %}
+                            <div class="{{ 'bg-gray-50' if loop.index % 2 == 0 else 'bg-white' }} px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt class="text-sm font-medium text-gray-500">{{ key }}</dt>
+                                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                    {% if "Doc" in key or "Sheet" in key %}
+                                        {% if value and value != 'None' %}
+                                            <a href="{{ value }}" target="_blank" class="text-blue-600 hover:text-blue-800">Click here to open</a>
+                                        {% endif %}
+                                    {% else %}
+                                        {{ value if value else "" }}
+                                    {% endif %}
+                                </dd>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </dl>
+            </div>
+        </div>
+    {% else %}
+        <div class="bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="text-center">
+                    <p class="text-sm text-gray-500">No details found.</p>
+                </div>
+            </div>
+        </div>
     {% endif %}
-       {% endfor %}
-</table>
-   {% else %}
-<p>No details found.</p>
-   {% endif %}
 </div>
-</body>
-</html>
+{% endblock %}
