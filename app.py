@@ -32,17 +32,17 @@ def index():
     # Get counts for dashboard
     counts_query = f"""
     SELECT
-        COUNT(CASE WHEN status = 'not started' THEN 1 END) as inactive_count,
-        COUNT(CASE WHEN status = 'in progress' THEN 1 END) as in_progress_count
+        COUNT(CASE WHEN status = 'in progress' THEN 1 END) as in_progress_count,
+        COUNT(CASE WHEN status = 'Completed' THEN 1 END) as completed_count
     FROM `{dataset_id}.{new_table_id}`
     """
     counts_job = client.query(counts_query)
     counts_result = next(counts_job.result())
 
     # Get Completed count from ISV_details
-    query = """Select count(*) AS completed FROM `wwbq-treasuredata.GBQ.ISV_Details` WHERE status='Completed';"""
-    query_job = client.query(query)
-    results = next(query_job.result())
+    # query = """Select count(*) AS completed FROM `wwbq-treasuredata.GBQ.ISV_Details` WHERE status='Completed';"""
+    # query_job = client.query(query)
+    # results = next(query_job.result())
 
     # Get recent activities
     activities_query = f"""
@@ -65,9 +65,9 @@ def index():
     total_domains = get_dist_domains_count()
 
     return render_template('index.html',
-                           inactive_count=counts_result.inactive_count or 0,
+                        #    inactive_count=counts_result.inactive_count or 0,
                            in_progress_count=counts_result.in_progress_count or 0,
-                           completed_count=results.completed or 0,
+                           completed_count=counts_result.completed_count or 0,
                            recent_activities=recent_activities,
                            domain_count=len(DOMAIN_CHOICES) or 0,
                            domain_chart=domain_chart,
