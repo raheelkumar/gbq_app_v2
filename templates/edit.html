@@ -102,7 +102,7 @@
                             <label for="ISV_End_Date" class="block text-sm font-medium text-gray-700">End Date</label>
                             <div class="mt-1">
                                 <input type="date" id="ISV_End_Date" name="ISV_End_Date"
-                                       value="{{ details.ISV_End_Date.strftime('%Y-%m-%d') if details.ISV_End_Date and not isinstance(details.ISV_End_Date, str) else '' }}"
+                                       value="{{ details.ISV_End_Date.strftime('%Y-%m-%d') if details.ISV_End_Date else '' }}"
                                        class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
                             </div>
                         </div>

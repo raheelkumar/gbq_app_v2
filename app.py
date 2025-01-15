@@ -8,12 +8,14 @@ from domains import DOMAIN_CHOICES
 from forms import ISVForm
 import os
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('Agg')  # Set the backend
 import matplotlib.pyplot as plt
+import seaborn as sns  # Add seaborn import
 import io
 import base64
 from matplotlib.figure import Figure
 import textwrap
+import numpy as np
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -726,6 +728,14 @@ def most_recent_isvs():
 
 
 #Krishnakanth's Code
+
+# Fetch ISVs from BigQuery
+def fetch_isvs(query):
+    query_job = client.query(query)
+    results = query_job.result()
+    return [dict(row) for row in results]
+
+
 @app.route('/dashboards')
 def dashboards():  # Renamed from home() to match the route
     query = """Select status, count(*) as count FROM `wwbq-treasuredata.GBQ.ISV_Details` GROUP BY status"""
@@ -831,13 +841,50 @@ def list_by_year_quarter():
         # quarter_chart=quarter_chart,
     )
 
+# Initialize seaborn style
+sns.set_theme()  # Set seaborn defaults
+sns.set_style("whitegrid")  # Set specific style
 
-# Helper function to generate domain chart
+def set_chart_style():
+    """Set common style elements for all charts"""
+    # Use seaborn styling
+    sns.set_style("whitegrid")
+    plt.rcParams['font.family'] = 'sans-serif'
+    plt.rcParams['font.sans-serif'] = ['Arial']
+    plt.rcParams['axes.edgecolor'] = '#333333'
+    plt.rcParams['axes.linewidth'] = 1.0
+    plt.rcParams['grid.alpha'] = 0.3
+    plt.rcParams['grid.color'] = '#666666'
+
+
+def set_chart_style():
+    """Set common style elements for all charts"""
+    # First use a matplotlib style as base
+    plt.style.use('bmh')
+
+    # Then apply seaborn styling
+    sns.set_style("whitegrid")
+
+    # Finally, add custom tweaks
+    plt.rcParams.update({
+        'font.family': 'sans-serif',
+        'font.sans-serif': ['Arial'],
+        'axes.edgecolor': '#333333',
+        'axes.linewidth': 1.0,
+        'grid.alpha': 0.3,
+        'grid.color': '#666666',
+        'figure.figsize': [10, 6],
+        'figure.dpi': 100
+    })
+
+# Example usage for a specific chart
 def generate_domain_chart():
+    set_chart_style()  # Apply the style
     query = """
     SELECT domain, COUNT(*) AS isv_count
     FROM `wwbq-treasuredata.GBQ.ISV_Details`
     GROUP BY domain
+    ORDER BY isv_count DESC
     """
     results = client.query(query).result()
     domains, counts = [], []
@@ -845,37 +892,56 @@ def generate_domain_chart():
         domains.append(row.domain)
         counts.append(row.isv_count)
 
-    plt.figure(figsize=(12, 6))
-    plt.bar(domains, counts, color="lightgreen")
-    plt.xlabel("domain")
-    plt.ylabel("isv_count")
-    plt.title("ISV Count by Domain")
-    plt.xticks(rotation=75, ha='right')
-    plt.tight_layout()
-#    plt.grid(axis='y')
+    # Create figure with specific size and DPI
+    plt.figure(figsize=(12, 6), dpi=100)
+    set_chart_style()
 
+    # Create gradient colors
+    colors = plt.cm.Blues(np.linspace(0.4, 0.8, len(domains)))
+
+    # Create bars with gradient colors
+    bars = plt.bar(domains, counts, color=colors)
+
+    # Customize the chart
+    plt.title('ISV Distribution Across Domains', fontsize=16, pad=20)
+    plt.xlabel('Domain', fontsize=12, labelpad=10)
+    plt.ylabel('Number of ISVs', fontsize=12, labelpad=10)
+
+    # Rotate x-axis labels for better readability
+    plt.xticks(rotation=45, ha='right', fontsize=10)
+    plt.yticks(fontsize=10)
+
+    # Add value labels on top of bars
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width() / 2., height,
+                 f'{int(height)}',
+                 ha='center', va='bottom')
+
+    # Adjust layout to prevent label cutoff
+    plt.tight_layout()
+
+    # Save to buffer
     img = io.BytesIO()
-    plt.savefig(img, format="png")
+    plt.savefig(img, format="png", bbox_inches='tight', dpi=100)
     img.seek(0)
     chart = base64.b64encode(img.getvalue()).decode()
     img.close()
-    # chart_path = "static/domain_chart.png"
-    # plt.savefig(chart_path)
     plt.close()
     return chart
 
 
-# Helper function to generate quarter chart
 def generate_quarter_chart():
     query = """
     SELECT CAST(year as INT64) as year, quarter, COUNT(*) AS isv_count
     FROM `wwbq-treasuredata.GBQ.ISV_Details`
-    GROUP BY year, quarter ORDER BY year, quarter
+    GROUP BY year, quarter 
+    ORDER BY year, quarter
     """
     results = client.query(query).result()
 
     data = {}
-    years =set()
+    years = set()
     quarters = ['Q1', 'Q2', 'Q3', 'Q4']
     for row in results:
         year = row.year
@@ -886,40 +952,67 @@ def generate_quarter_chart():
         data[quarter][year] = count
         years.add(year)
 
-    years =sorted(years)
+    years = sorted(years)
     x = range(len(years))
-    bar_width =0.2
+    bar_width = 0.2
 
-    fig = Figure(figsize=(7, 5))
+    # Create figure with increased height
+    fig = plt.figure(figsize=(10, 8), dpi=100)  # Increased height from 6 to 8
     ax = fig.add_subplot(111)
+    set_chart_style()
 
-    for i, quarter in enumerate(quarters):
+    # Color palette for quarters with enhanced visibility
+    colors = ['#1f77b4', '#2ca02c', '#ff7f0e', '#d62728']
+
+    # Plot bars for each quarter
+    for i, (quarter, color) in enumerate(zip(quarters, colors)):
         values = [data.get(quarter, {}).get(year, 0) for year in years]
-        ax.bar([p + bar_width * i for p in x], values, bar_width, label=quarter)
+        bars = ax.bar([p + bar_width * i for p in x], values, bar_width,
+                      label=quarter, color=color, alpha=0.85)  # Slightly increased alpha
 
-    ax.set_title('ISV Count by Quarter')
-    ax.set_xlabel('Years')
-    ax.set_ylabel('ISV Count')
+        # Add value labels on top of bars
+        for bar in bars:
+            height = bar.get_height()
+            if height > 0:  # Only add label if there's a value
+                ax.text(bar.get_x() + bar.get_width() / 2., height,
+                        f'{int(height)}', ha='center', va='bottom',
+                        fontsize=9)  # Slightly larger font for labels
+
+    # Customize the chart
+    ax.set_title('Quarterly ISV Growth Trends', fontsize=16, pad=20)
+    ax.set_xlabel('Years', fontsize=12, labelpad=10)
+    ax.set_ylabel('Number of ISVs', fontsize=12, labelpad=10)
+
+    # Set x-axis ticks
     ax.set_xticks([p + bar_width * len(quarters) / 2 for p in x])
-    ax.set_xticklabels(years)
-    ax.legend(title='Quarters')
+    ax.set_xticklabels(years, fontsize=10)
 
+    # Add legend at the bottom with horizontal layout
+    ax.legend(title='Quarters', title_fontsize=10, fontsize=9,
+              loc='upper center', bbox_to_anchor=(0.5, -0.15),
+              ncol=4)  # Changed legend position and made it horizontal
+
+    # Adjust layout to accommodate bottom legend
+    plt.tight_layout()
+    plt.subplots_adjust(bottom=0.2)  # Make room for the legend
+
+    # Save to buffer
     img = io.BytesIO()
-    # plt.savefig(img, format="png")
-    fig.savefig(img, format="png")
+    plt.savefig(img, format="png", bbox_inches='tight', dpi=100)
     img.seek(0)
     chart = base64.b64encode(img.getvalue()).decode()
     img.close()
-    # chart_path = "static/quarter_chart.png"
-    # plt.savefig(chart_path)
     plt.close()
     return chart
 
+
 def generate_pie_chart():
+    set_chart_style()  # Apply the style
     query = """
     SELECT Year as year, COUNT(*) AS isv_count
     FROM `wwbq-treasuredata.GBQ.ISV_Details`
-    GROUP BY year ORDER BY year
+    GROUP BY year 
+    ORDER BY year
     """
     results = client.query(query).result()
     years, counts = [], []
@@ -927,87 +1020,172 @@ def generate_pie_chart():
         years.append(str(int(row.year)))
         counts.append(row.isv_count)
 
-    # fig = Figure()
-    # ax= fig.subplots()
-    fig, ax = plt.subplots()
-    ax.pie(
-        counts,
-        labels=years,
-        autopct='%1.1f%%',
-        startangle=90,
-        colors=['#FF9999', '#66B2FF', '#99FF99', '#FFCC99', '#C299FF'],
-    )
-    ax.set_title("ISV by Years")
+    # Create figure
+    plt.figure(figsize=(8, 8), dpi=100)
+    set_chart_style()
 
+    # Color palette
+    colors = plt.cm.Pastel1(np.linspace(0, 1, len(years)))
+
+    # Create pie chart with custom styling
+    patches, texts, autotexts = plt.pie(counts, labels=years, colors=colors,
+                                        autopct='%1.1f%%', startangle=90,
+                                        pctdistance=0.85,
+                                        wedgeprops={'edgecolor': 'white',
+                                                    'linewidth': 2,
+                                                    'antialiased': True})
+
+    # Add a circle at the center to create a donut chart effect
+    centre_circle = plt.Circle((0, 0), 0.70, fc='white')
+    fig = plt.gcf()
+    fig.gca().add_artist(centre_circle)
+
+    # Customize text properties
+    plt.setp(autotexts, size=9, weight="bold")
+    plt.setp(texts, size=10)
+
+    # Add title in the center
+    plt.text(0, 0, 'ISV Distribution\nby Year',
+             horizontalalignment='center',
+             verticalalignment='center',
+             fontsize=14,
+             fontweight='bold')
+
+    # Equal aspect ratio ensures that pie is drawn as a circle
+    plt.axis('equal')
+
+    # Save to buffer
     img = io.BytesIO()
-    plt.savefig(img, format="png")
+    plt.savefig(img, format="png", bbox_inches='tight', dpi=100)
     img.seek(0)
     chart = base64.b64encode(img.getvalue()).decode('utf8')
     img.close()
-    # chart_path = "static/domain_chart.png"
-    # plt.savefig(chart_path)
     plt.close()
     return chart
 
-# Fetch ISVs from BigQuery
-def fetch_isvs(query):
-    query_job = client.query(query)
-    results = query_job.result()
-    return [dict(row) for row in results]
 
 def generate_qtr_growth_chart():
+    set_chart_style()  # Apply the style
     query = """
-    SELECT CONCAT(CAST(year as STRING), '-', quarter) AS period, Count(*) as tool_count 
+    SELECT CONCAT(CAST(year as STRING), '-', quarter) AS period, 
+           Count(*) as tool_count,
+           SUM(Count(*)) OVER (ORDER BY year, quarter) as cumulative_count
     FROM `wwbq-treasuredata.GBQ.ISV_Details` 
-    GROUP BY year, quarter ORDER BY year, quarter;
+    GROUP BY year, quarter 
+    ORDER BY year, quarter
     """
-    data =fetch_isvs(query)
+    data = fetch_isvs(query)
     periods = [row['period'] for row in data]
     counts = [row['tool_count'] for row in data]
+    cumulative = [row['cumulative_count'] for row in data]
 
-    plt.figure(figsize=(7, 6))
-    plt.plot(periods, counts, marker='o', label="Tools Added")
-    plt.title("Quarterly Growth Rate")
-    plt.xlabel("Year-Quarter")
-    plt.ylabel("ISV Count")
-    plt.xticks(rotation=51, ha='right')
-    plt.grid(True)
+    # Create figure
+    plt.figure(figsize=(10, 6), dpi=100)
+    set_chart_style()
+
+    # Plot both lines
+    plt.plot(periods, counts, marker='o', label="Quarterly Additions",
+             color='#2196F3', linewidth=2, markersize=6)
+    plt.plot(periods, cumulative, marker='s', label="Cumulative Growth",
+             color='#4CAF50', linewidth=2, markersize=6)
+
+    # Add points labels
+    for i, (count, cum) in enumerate(zip(counts, cumulative)):
+        plt.annotate(f'{count}', (periods[i], count),
+                     textcoords="offset points", xytext=(0, 10),
+                     ha='center', fontsize=8)
+        plt.annotate(f'{cum}', (periods[i], cum),
+                     textcoords="offset points", xytext=(0, -15),
+                     ha='center', fontsize=8)
+
+    # Customize the chart
+    plt.title('ISV Growth Trajectory', fontsize=16, pad=20)
+    plt.xlabel('Year-Quarter', fontsize=12, labelpad=10)
+    plt.ylabel('Number of ISVs', fontsize=12, labelpad=10)
+
+    # Rotate x-axis labels
+    plt.xticks(rotation=45, ha='right', fontsize=10)
+    plt.yticks(fontsize=10)
+
+    # Add legend
+    plt.legend(fontsize=10, loc='upper left')
+
+    # Adjust layout
     plt.tight_layout()
-    plt.legend()
 
-    buf = io.BytesIO()
-    plt.savefig(buf, format="png")
-    buf.seek(0)
-    chart = base64.b64encode(buf.getvalue()).decode('utf8')
+    # Save to buffer
+    img = io.BytesIO()
+    plt.savefig(img, format="png", bbox_inches='tight', dpi=100)
+    img.seek(0)
+    chart = base64.b64encode(img.getvalue()).decode('utf8')
+    img.close()
     plt.close()
     return chart
+
 
 def generate_top_domain_chart():
     query = """
-    Select Domain as domain, Count(*) as tool_count FROM `wwbq-treasuredata.GBQ.ISV_Details` 
-    GROUP BY domain ORDER BY tool_count DESC limit 10;
+    Select Domain as domain, Count(*) as tool_count 
+    FROM `wwbq-treasuredata.GBQ.ISV_Details` 
+    GROUP BY domain 
+    ORDER BY tool_count DESC 
+    LIMIT 10
     """
-    data =fetch_isvs(query)
+    data = fetch_isvs(query)
+
+    # Sort data in descending order
+    data = sorted(data, key=lambda x: x['tool_count'], reverse=True)
+
+    # Extract sorted domains and counts
     domains = [row['domain'] for row in data]
     counts = [row['tool_count'] for row in data]
 
-    wrapped_domains=[textwrap.fill(domain, width=20) for domain in domains]
+    # Create figure
+    plt.figure(figsize=(10, 6), dpi=100)
+    set_chart_style()
 
-    plt.figure(figsize=(7, 6))
-    plt.barh(wrapped_domains, counts, color='lightblue')
-    plt.title("Top domains by tool")
-    plt.xlabel("tool_count")
-    plt.ylabel("Domains")
-#    plt.xticks(rotation=45, ha='right')
-    plt.gca().invert_yaxis()
-    plt.grid(axis='x', linestyle='--', alpha=0.7)
+    # Create gradient colors - using greens
+    colors = plt.cm.Greens(np.linspace(0.5, 0.9, len(domains)))
+
+    # Create position array - reversed to show highest value at top
+    positions = range(len(domains) - 1, -1, -1)
+
+    # Create horizontal bars with reversed positions
+    bars = plt.barh(positions, counts, color=colors)
+
+    # Customize the chart
+    plt.title('Top 10 Domains by ISV Count', fontsize=16, pad=20)
+    plt.xlabel('Number of ISVs', fontsize=12, labelpad=10)
+
+    # Set y-ticks with domain names - reversed to match bar positions
+    plt.yticks(positions, domains, fontsize=10)
+
+    # Add value labels at the end of each bar
+    for bar in bars:
+        width = bar.get_width()
+        plt.text(width, bar.get_y() + bar.get_height() / 2,
+                 f' {int(width)}',
+                 va='center', fontsize=10, fontweight='bold')
+
+    # Customize ticks
+    plt.xticks(fontsize=10)
+
+    # Remove edge lines for cleaner look
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+
+    # Add light grid lines only for x-axis
+    plt.grid(axis='x', linestyle='--', alpha=0.3)
+
+    # Adjust layout
     plt.tight_layout()
-#    plt.legend()
 
-    buf = io.BytesIO()
-    plt.savefig(buf, format="png")
-    buf.seek(0)
-    chart = base64.b64encode(buf.getvalue()).decode('utf8')
+    # Save to buffer
+    img = io.BytesIO()
+    plt.savefig(img, format="png", bbox_inches='tight', dpi=100)
+    img.seek(0)
+    chart = base64.b64encode(img.getvalue()).decode('utf8')
+    img.close()
     plt.close()
     return chart
 
@@ -1103,7 +1281,7 @@ def get_quarters():
     return [row['Quarter'] for row in results]
 
 @app.route('/logins')
-def logins():
+def login():
     #login logic
     return render_template('login.html')
 
@@ -1173,7 +1351,7 @@ def list_isv():
 
 @app.route('/details/<int:sr_no>', methods=['GET'])
 def details(sr_no):
-    table_ref = f"{client.project}.{DATASET_ID}.{TABLE_ID}"
+    table_ref = f"{client.project}.{dataset_id}.{new_table_id}"
     query = f"SELECT * FROM `{table_ref}` WHERE Sr_No = @sr_no"
     job_config = bigquery.QueryJobConfig(
         query_parameters=[

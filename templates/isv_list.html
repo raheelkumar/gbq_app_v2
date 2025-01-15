@@ -3,109 +3,160 @@
 
 {% block content %}
 <div class="min-h-screen space-y-8">
-    <div class="bg-white rounded-lg shadow-md p-8">
-        <h1 class="text-2xl font-bold text-gray-900 mb-6">Google BigQuery Ready Partners</h1>
+    <!-- Enhanced Header Section -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-400 rounded-lg shadow-xl p-8 text-white">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-4xl font-bold leading-tight">
+                <span class="text-blue-100">BigQuery Ready Partners</span>
+            </h1>
+            <p class="text-xl text-blue-100 mt-4 font-light">
+                Browse and manage ISV partnerships across different domains
+            </p>
+        </div>
+    </div>
 
-        <!-- Filters Section -->
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            <select id="yearQuarterFilter" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                <option value="">Select YearQuarter</option>
-                {% for yearquarter in yearquarters %}
-                    <option value="{{ yearquarter }}" {% if request.args.get('yearquarter') == yearquarter %}selected{% endif %}>{{ yearquarter }}</option>
-                {% endfor %}
-            </select>
+    <!-- Main Content Card -->
+    <div class="bg-white rounded-lg shadow-md">
+        <!-- Enhanced Filter Section -->
+        <div class="p-6 border-b border-gray-200">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <select id="yearQuarterFilter"
+                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">Select YearQuarter</option>
+                    {% for yearquarter in yearquarters %}
+                        <option value="{{ yearquarter }}" {% if request.args.get('yearquarter') == yearquarter %}selected{% endif %}>
+                            {{ yearquarter }}
+                        </option>
+                    {% endfor %}
+                </select>
 
-            <select id="statusFilter" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                <option value="">Select Status</option>
-                {% for status in statuses %}
-                    <option value="{{ status }}" {% if request.args.get('status') == status %}selected{% endif %}>{{ status }}</option>
-                {% endfor %}
-            </select>
+                <select id="statusFilter"
+                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">Select Status</option>
+                    {% for status in statuses %}
+                        <option value="{{ status }}" {% if request.args.get('status') == status %}selected{% endif %}>
+                            {{ status }}
+                        </option>
+                    {% endfor %}
+                </select>
 
-            <input type="text" id="search" placeholder="Search ISV by name or domain" 
-                   value="{{ request.args.get('search', '') }}"
-                   class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                <input type="text" id="search"
+                       placeholder="Search Partners by name or domain"
+                       value="{{ request.args.get('search', '') }}"
+                       class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
 
-            <button id="search-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                Search
-            </button>
+                <button id="search-btn"
+                        class="inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    Search
+                </button>
 
-            <button id="reset-filters-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
-                Reset Filters
-            </button>
+                <button id="reset-filters-btn"
+                        class="inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Reset
+                </button>
+            </div>
         </div>
 
-        <!-- Table Section -->
-        <div class="flex flex-col">
-            <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-                    <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ISV Name</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">YearQuarter</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                {% for isv in isvs %}
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ isv["Tool_Name"] }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ isv["Domain"] }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ isv["YearQuarter"] }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                            {% if isv["Status"] == 'Completed' %}
-                                                bg-green-100 text-green-800
-                                            {% elif isv["Status"] == 'in progress' %}
-                                                bg-yellow-100 text-yellow-800
-                                            {% else %}
-                                                bg-gray-100 text-gray-800
-                                            {% endif %}">
-                                            {{ isv["Status"] }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
-                                        <button onclick="window.location.href='/details/{{ isv["Sr_No"] }}'"
-                                                class="text-blue-600 hover:text-blue-900">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                            </svg>
-                                        </button>
-                                        <button onclick="window.location.href='/edit/{{ isv["Sr_No"] }}'"
-                                                class="text-yellow-600 hover:text-yellow-900">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                            </svg>
-                                        </button>
-                                        <button onclick="deleteTool('{{ isv["Sr_No"] }}')"
-                                                class="text-red-600 hover:text-red-900">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                            </svg>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <!-- Results Section -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            ISV Name
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Domain
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            YearQuarter
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for isv in isvs %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ isv["Tool_Name"] }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ isv["Domain"] }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ isv["YearQuarter"] }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                {% if isv["Status"] == 'Completed' %}
+                                    bg-green-100 text-green-800
+                                {% elif isv["Status"] == 'in progress' %}
+                                    bg-yellow-100 text-yellow-800
+                                {% else %}
+                                    bg-gray-100 text-gray-800
+                                {% endif %}">
+                                {{ isv["Status"] }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
+                            <button onclick="window.location.href='/details/{{ isv["Sr_No"] }}'"
+                                    class="text-blue-600 hover:text-blue-900 transition-colors duration-200">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </button>
+                            <button onclick="window.location.href='/edit/{{ isv["Sr_No"] }}'"
+                                    class="text-yellow-600 hover:text-yellow-900 transition-colors duration-200">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </button>
+                            <button onclick="deleteTool('{{ isv["Sr_No"] }}')"
+                                    class="text-red-600 hover:text-red-900 transition-colors duration-200">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if not isvs %}
+            <!-- No Results State -->
+            <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h3 class="mt-4 text-lg font-medium text-gray-900">No ISVs Found</h3>
+                <p class="mt-2 text-sm text-gray-500">
+                    Try adjusting your search filters to find what you're looking for.
+                </p>
             </div>
+            {% endif %}
         </div>
 
         <!-- Pagination Section -->
         {% if total_pages > 1 %}
-        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4">
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
             <div class="flex-1 flex justify-center">
-                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm space-x-1" aria-label="Pagination">
                     {% if current_page > 1 %}
                     <a href="/list?page={{ current_page - 1 }}&search={{ request.args.get('search', '') }}&yearquarter={{ request.args.get('yearquarter', '') }}&status={{ request.args.get('status', '') }}"
-                       class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                       class="relative inline-flex items-center px-4 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
                         Previous
                     </a>
                     {% endif %}
@@ -124,7 +175,7 @@
 
                     {% if current_page < total_pages %}
                     <a href="/list?page={{ current_page + 1 }}&search={{ request.args.get('search', '') }}&yearquarter={{ request.args.get('yearquarter', '') }}&status={{ request.args.get('status', '') }}"
-                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                       class="relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
                         Next
                     </a>
                     {% endif %}
