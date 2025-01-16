@@ -8,14 +8,18 @@ from domains import DOMAIN_CHOICES
 from forms import ISVForm
 import os
 import matplotlib
-matplotlib.use('Agg')  # Set the backend
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import seaborn as sns  # Add seaborn import
+import seaborn as sns
 import io
 import base64
 from matplotlib.figure import Figure
 import textwrap
 import numpy as np
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+from flask import session, abort
+import re
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -40,11 +44,6 @@ def index():
     """
     counts_job = client.query(counts_query)
     counts_result = next(counts_job.result())
-
-    # Get Completed count from ISV_details
-    # query = """Select count(*) AS completed FROM `wwbq-treasuredata.GBQ.ISV_Details` WHERE status='Completed';"""
-    # query_job = client.query(query)
-    # results = next(query_job.result())
 
     # Get recent activities
     activities_query = f"""
@@ -537,40 +536,163 @@ def update_isv(sr_no):
     return render_template('edit_isv.html', form=form, sr_no=sr_no)
 
 
-@app.route('/isv_history')
-def isv_history():
-    # Get filter parameters
-    tool_name = request.args.get('tool_name', '')
-    domain = request.args.get('domain', '')
-    status = request.args.get('status', '')
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_email' not in session:
+            flash('Please log in to access this page', 'error')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
 
-    # Base query
-    query = """
-    SELECT *
-    FROM `GBQ.ISV_DETAILS_TEST`
-    WHERE 1=1
-    """
+    return decorated_function
 
-    # Add filters
-    if tool_name:
-        query += f" AND Tool_Name LIKE '%{tool_name}%'"
-    if domain:
-        query += f" AND Domain = '{domain}'"
-    if status:
-        query += f" AND Status = '{status}'"
 
-    # Execute query
-    df = client.query(query).to_dataframe()
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_email' not in session:
+            flash('Please log in to access this page', 'error')
+            return redirect(url_for('login'))
+        if session.get('user_role') != 'admin':
+            flash('You do not have permission to access this page', 'error')
+            return abort(403)
+        return f(*args, **kwargs)
 
-    # Get unique values for filters
-    domains = df['Domain'].unique().tolist()
-    statuses = df['Status'].unique().tolist()
+    return decorated_function
 
-    return render_template('isv_history.html',
-                           isvs=df.to_dict('records'),
-                           domains=domains,
-                           statuses=statuses)
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        if not email or not password:
+            flash('Please provide both email and password', 'error')
+            return render_template('login.html')
+
+        # Query user from BigQuery
+        query = f"""
+        SELECT email, password_hash, role
+        FROM `{dataset_id}.users`
+        WHERE email = @email
+        """
+
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("email", "STRING", email)
+            ]
+        )
+
+        results = list(client.query(query, job_config=job_config))
+
+        if not results:
+            flash('Invalid email or password', 'error')
+            return render_template('login.html')
+
+        user = results[0]
+
+        if check_password_hash(user.password_hash, password):
+            session['user_email'] = user.email
+            session['user_role'] = user.role
+
+            # Update last login timestamp
+            update_query = f"""
+            UPDATE `{dataset_id}.users`
+            SET last_login = CURRENT_TIMESTAMP()
+            WHERE email = @email
+            """
+            client.query(update_query, job_config=job_config).result()
+
+            flash('Login successful!', 'success')
+            return redirect(url_for('index'))
+
+        flash('Invalid email or password', 'error')
+        return render_template('login.html')
+
+    return render_template('login.html')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        if not email or not password or not confirm_password:
+            flash('Please fill in all fields', 'error')
+            return render_template('register.html')
+
+        # Validate email format
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            flash('Please enter a valid email address', 'error')
+            return render_template('register.html')
+
+        # Validate password requirements
+        if len(password) < 8:
+            flash('Password must be at least 8 characters long', 'error')
+            return render_template('register.html')
+        if not re.search(r"[A-Z]", password):
+            flash('Password must contain at least one uppercase letter', 'error')
+            return render_template('register.html')
+        if not re.search(r"\d", password):
+            flash('Password must contain at least one number', 'error')
+            return render_template('register.html')
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+            flash('Password must contain at least one special character', 'error')
+            return render_template('register.html')
+
+        if password != confirm_password:
+            flash('Passwords do not match', 'error')
+            return render_template('register.html')
+
+        # Check if user already exists
+        check_query = f"""
+        SELECT COUNT(*) as count
+        FROM `{dataset_id}.users`
+        WHERE email = @email
+        """
+
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("email", "STRING", email)
+            ]
+        )
+
+        results = list(client.query(check_query, job_config=job_config))
+        if results[0].count > 0:
+            flash('Email already registered', 'error')
+            return render_template('register.html')
+
+        # Create new user with 'user' role
+        password_hash = generate_password_hash(password)
+        insert_query = f"""
+        INSERT INTO `{dataset_id}.users` (email, password_hash, role, created_at, last_login)
+        VALUES (@email, @password_hash, 'user', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())
+        """
+
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("email", "STRING", email),
+                bigquery.ScalarQueryParameter("password_hash", "STRING", password_hash)
+            ]
+        )
+
+        client.query(insert_query, job_config=job_config).result()
+        flash('Registration successful! Please login.', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You have been logged out', 'success')
+    return redirect(url_for('login'))
+
+# Anushree's Code
 @app.route("/isv_history_with_filter", methods=["GET"])
 def isv_history_with_filter():
     selected_quarter = request.args.get("quarter")
@@ -734,29 +856,6 @@ def fetch_isvs(query):
     query_job = client.query(query)
     results = query_job.result()
     return [dict(row) for row in results]
-
-
-@app.route('/dashboards')
-def dashboards():  # Renamed from home() to match the route
-    query = """Select status, count(*) as count FROM `wwbq-treasuredata.GBQ.ISV_Details` GROUP BY status"""
-    query_job = client.query(query)
-    results = query_job.result()
-    isv_counts = {row.status: row.count for row in results}
-    domain_chart = generate_domain_chart()
-    quarter_chart = generate_quarter_chart()
-    pie_chart = generate_pie_chart()
-    line_chart_qtr = generate_qtr_growth_chart()
-    hor_chart_dom = generate_top_domain_chart()
-    total_domains = get_dist_domains_count()
-    return render_template('home2.html',
-                         domain_chart=domain_chart,
-                         quarter_chart=quarter_chart,
-                         isv_counts=isv_counts,
-                         pie_chart=pie_chart,
-                         total_domains=total_domains,
-                         line_chart_qtr=line_chart_qtr,
-                         hor_chart_dom=hor_chart_dom)
-
 
 @app.route('/isv_status/<status>')
 def isv_status(status):
@@ -1279,11 +1378,6 @@ def get_quarters():
     query = "SELECT DISTINCT Quarter FROM `wwbq-treasuredata.GBQ.ISV_Details`"
     results = fetch_isvs(query)
     return [row['Quarter'] for row in results]
-
-@app.route('/logins')
-def login():
-    #login logic
-    return render_template('login.html')
 
 #vinnet and Anurag's code
 
