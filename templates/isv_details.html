@@ -80,13 +80,21 @@
                                 <dd class="text-sm text-gray-900 col-span-2">
                                     {% if "Doc" in key or "Sheet" in key %}
                                         {% if value and value != 'None' %}
-                                            <a href="{{ value }}" target="_blank"
-                                               class="inline-flex items-center text-blue-600 hover:text-blue-800">
-                                                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                                </svg>
-                                                Open Document
-                                            </a>
+                                            {% set doc_links = value.split(',') %}
+                                            <div class="space-y-2">
+                                            {% for link in doc_links %}
+                                                {% set trimmed_link = link.strip() %}
+                                                {% if trimmed_link %}
+                                                    <a href="{{ trimmed_link }}" target="_blank"
+                                                       class="inline-flex items-center text-blue-600 hover:text-blue-800 mr-4">
+                                                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                                        </svg>
+                                                        Open Document {{ loop.index if doc_links|length > 1 }}
+                                                    </a>
+                                                {% endif %}
+                                            {% endfor %}
+                                            </div>
                                         {% else %}
                                             <span class="text-gray-400">No document available</span>
                                         {% endif %}
