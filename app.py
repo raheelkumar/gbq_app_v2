@@ -176,11 +176,9 @@ def add_isv():
                     Sr_No, Tool_Name, Domain, Certification_Type, Version, Description,
                     Team_Members, Year, Quarter, YearQuarter, ISV_Start_Date,
                     POC, Status, Percentage, Comments, Assessment_Sheet,
-                    Questions_Doc, Acceptance_Criteria_Sheet, Summary_Doc1,
-                    Summary_Doc2, IOL_Doc, Installation_Doc, Best_Practices_Doc,
-                    Performance_Doc, Metric_Observation_Doc, Issue_Bug_Doc,
+                    Acceptance_Criteria_Sheet, IOL_Doc, Best_Practices_Doc, Summary_Doc1, Questions_Doc,
                     created_at
-                )
+                    )
                 VALUES (
                     {next_srno},
                     "{form.isv_name.data.replace('"', '""')}",
@@ -198,16 +196,11 @@ def add_isv():
                     {float(form.percentage.data) if form.percentage.data else 0.0},
                     "{(form.comments.data or '').replace('"', '""')}",
                     "{(form.assessment_sheet.data or '').replace('"', '""')}",
-                    "{(form.questions_doc.data or '').replace('"', '""')}",
                     "{(form.acceptance_criteria_sheet.data or '').replace('"', '""')}",
-                    "{(form.summary_doc1.data or '').replace('"', '""')}",
-                    "{(form.summary_doc2.data or '').replace('"', '""')}",
                     "{(form.iol_doc.data or '').replace('"', '""')}",
-                    "{(form.installation_doc.data or '').replace('"', '""')}",
                     "{(form.best_practices_doc.data or '').replace('"', '""')}",
-                    "{(form.performance_doc.data or '').replace('"', '""')}",
-                    "{(form.metric_observation_doc.data or '').replace('"', '""')}",
-                    "{(form.issue_bug_doc.data or '').replace('"', '""')}",
+                    "{(form.summary_doc1.data or '').replace('"', '""')}",
+                    "{(form.questions_doc.data or '').replace('"', '""')}",
                     TIMESTAMP(FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S UTC', CURRENT_TIMESTAMP()))
                 )
                 """
