@@ -16,7 +16,7 @@
         </div>
 
         <!-- Registration Form -->
-        <form class="mt-8 space-y-6" action="{{ url_for('register') }}" method="POST">
+        <form class="mt-8 space-y-6" id="registerForm">
             <!-- Email Input -->
             <div>
                 <label for="email" class="block text-sm font-medium text-gray-700">
@@ -77,7 +77,7 @@
 
             <!-- Register Button -->
             <div>
-                <button type="submit"
+                <button type="submit" id="registerButton"
                         class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
                     Create Account
                 </button>
@@ -109,9 +109,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
+    const form = document.getElementById('registerForm');
     const password = document.getElementById('password');
     const confirmPassword = document.getElementById('confirm_password');
+    const submitButton = document.getElementById('registerButton');
+    let originalButtonContent;
 
     // Password validation function
     function validatePassword(password) {
@@ -120,10 +122,38 @@ document.addEventListener('DOMContentLoaded', function() {
         const hasNumber = /\d/.test(password);
         const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-        return password.length >= minLength && hasUpperCase && hasNumber && hasSpecialChar;
+        const requirements = [];
+        if (password.length < minLength) requirements.push("at least 8 characters");
+        if (!hasUpperCase) requirements.push("an uppercase letter");
+        if (!hasNumber) requirements.push("a number");
+        if (!hasSpecialChar) requirements.push("a special character");
+
+        return {
+            isValid: password.length >= minLength && hasUpperCase && hasNumber && hasSpecialChar,
+            missing: requirements
+        };
     }
 
-    form.addEventListener('submit', function(event) {
+    function showLoadingState() {
+        originalButtonContent = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+        submitButton.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Creating Account...
+        `;
+    }
+
+    function hideLoadingState() {
+        submitButton.disabled = false;
+        submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        submitButton.innerHTML = originalButtonContent;
+    }
+
+    form.addEventListener('submit', async function(event) {
         event.preventDefault();
 
         // Reset previous error states
@@ -131,9 +161,10 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmPassword.classList.remove('border-red-500');
 
         // Validate password requirements
-        if (!validatePassword(password.value)) {
+        const validation = validatePassword(password.value);
+        if (!validation.isValid) {
             password.classList.add('border-red-500');
-            alert('Password does not meet the requirements');
+            showToast(`Password must include ${validation.missing.join(', ')}`, 'error');
             return;
         }
 
@@ -141,12 +172,41 @@ document.addEventListener('DOMContentLoaded', function() {
         if (password.value !== confirmPassword.value) {
             password.classList.add('border-red-500');
             confirmPassword.classList.add('border-red-500');
-            alert('Passwords do not match');
+            showToast('Passwords do not match', 'error');
             return;
         }
 
-        // If all validations pass, submit the form
-        form.submit();
+        showLoadingState();
+
+        try {
+            const formData = new FormData(form);
+            const response = await fetch('{{ url_for("register") }}', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Make the form fade out
+                form.style.transition = 'opacity 0.3s ease-out';
+                form.style.opacity = '0';
+
+                setTimeout(() => {
+                    showToast('Registration successful! Redirecting to login...', 'success');
+                    setTimeout(() => {
+                        window.location.href = result.redirect;
+                    }, 1000);
+                }, 300);
+            } else {
+                showToast(result.message || 'Registration failed. Please try again.', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('An error occurred during registration. Please try again.', 'error');
+        } finally {
+            hideLoadingState();
+        }
     });
 });
 </script>

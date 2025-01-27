@@ -54,6 +54,25 @@
         .dropdown-button:hover {
             color: #90cdf4;
         }
+
+        /* User dropdown styles */
+        #userDropdown {
+            z-index: 50;
+            transform-origin: top right;
+            transition: all 0.1s ease-out;
+        }
+
+        #userDropdown.hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+
+        #userDropdown:not(.hidden) {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -84,9 +103,49 @@
                     </div>
 
                     <a href="{{ url_for('list_isv') }}" class="hover:text-blue-200">Partnership Details</a>
+<!--                    <a href="{{ url_for('tracker') }}" class="hover:text-blue-200">Track Partners</a>-->
                     <a href="{{ url_for('tracker') }}" class="hover:text-blue-200">Track Partners</a>
-                    <a href="{{ url_for('add_isv') }}" class="hover:text-blue-200">Register Partnership</a>
-                    <a href="{{ url_for('login') }}" class="hover:text-blue-200">Account Access</a>
+                    {% if session.get('user_role') == 'admin' %}
+                        <a href="{{ url_for('add_isv') }}" class="hover:text-blue-200">Register Partnership</a>
+                    {% endif %}
+<!--                    <a href="{{ url_for('login') }}" class="hover:text-blue-200">Account Access</a>-->
+                    {% if session.get('user_email') %}
+                        <div class="dropdown relative">
+                            <button class="dropdown-button p-2 rounded-full hover:bg-blue-700 transition-colors duration-200" onclick="toggleUserDropdown(event)">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </button>
+                            <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                                <div class="py-1">
+                                    <div class="px-4 py-2 text-sm text-gray-700 border-b border-gray-200">
+                                        <div class="font-medium">Signed in as</div>
+                                        <div class="truncate">{{ session.get('user_email') }}</div>
+                                    </div>
+                                    {% if session.get('user_role') == 'admin' %}
+                                        <div class="px-4 py-2 text-sm text-gray-500 border-b border-gray-200">
+                                            Admin User
+                                        </div>
+                                    {% endif %}
+                                    <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200">
+                                        <div class="flex items-center">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                            </svg>
+                                            Logout
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="inline-flex items-center text-sm text-white hover:text-blue-200">
+                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                            </svg>
+                            Login
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -106,7 +165,78 @@
         {% block content %}{% endblock %}
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
+
     <script>
+        function showToast(message, type = 'error') {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            // Set toast classes based on type
+            const baseClasses = 'flex items-center w-full max-w-xs p-4 mb-4 rounded-lg shadow transition-opacity duration-300';
+            const typeClasses = type === 'error'
+                ? 'text-red-500 bg-red-100 border border-red-200'
+                : 'text-green-500 bg-green-100 border border-green-200';
+
+            toast.className = `${baseClasses} ${typeClasses}`;
+
+            // Set toast content with icon
+            toast.innerHTML = `
+                <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 ${
+                    type === 'error' ? 'text-red-500' : 'text-green-500'
+                }">
+                    ${type === 'error'
+                        ? '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>'
+                        : '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>'
+                    }
+                </div>
+                <div class="ml-3 text-sm font-normal">${message}</div>
+                <button type="button" class="ml-auto -mx-1.5 -my-1.5 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 inline-flex h-8 w-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100" onclick="this.parentElement.remove()">
+                    <span class="sr-only">Close</span>
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                </button>
+            `;
+
+            // Add to container
+            toastContainer.appendChild(toast);
+
+            // Fade in
+            setTimeout(() => {
+                toast.style.opacity = '1';
+            }, 10);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 5000);
+        }
+
+        // Add global AJAX error handler for admin access denied
+        document.addEventListener('DOMContentLoaded', function() {
+            let originalFetch = window.fetch;
+            window.fetch = function() {
+                return originalFetch.apply(this, arguments)
+                    .then(async response => {
+                        if (response.status === 403) {
+                            const data = await response.json();
+                            showToast(data.message);
+                            if (data.redirect) {
+                                setTimeout(() => {
+                                    window.location.href = data.redirect;
+                                }, 2000);
+                            }
+                            throw new Error('Access denied');
+                        }
+                        return response;
+                    });
+            };
+        });
+
+
         // Close dropdowns when clicking outside
         document.addEventListener('click', function(event) {
             const dropdowns = document.querySelectorAll('.dropdown');
@@ -140,6 +270,29 @@
                 event.stopPropagation();
             });
         });
+        // Handle clicks outside of dropdowns
+        document.addEventListener('click', function(event) {
+            // Close navigation dropdown
+            const dropdowns = document.querySelectorAll('.dropdown');
+            dropdowns.forEach(function(dropdown) {
+                if (!dropdown.contains(event.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+
+            // Close user dropdown
+            const userDropdown = document.getElementById('userDropdown');
+            if (userDropdown && !event.target.closest('.dropdown')) {
+                userDropdown.classList.add('hidden');
+            }
+        });
+
+        // Toggle user dropdown
+        function toggleUserDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('hidden');
+        }
     </script>
 </body>
 </html>

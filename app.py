@@ -32,8 +32,34 @@ dataset_id = "GBQ"
 table_id = "isv_data_store"
 new_table_id = "ISV_Details"
 
+# Decorator to check if user is logged in
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_email' not in session:
+            flash('Please log in to access this page', 'error')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Decorator for admin-only routes
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_email' not in session:
+            flash('Please log in to access this page', 'error')
+            return redirect(url_for('login'))
+        if session.get('user_role') != 'admin':
+            return jsonify({
+                'status': 'error',
+                'message': 'You do not have permission to access this page. Admin role required.',
+                'redirect': url_for('index')
+            }), 403
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/')
+@login_required
 def index():
     # Get counts for dashboard
     counts_query = f"""
@@ -80,6 +106,7 @@ def index():
 
 
 @app.route('/tracker')
+@login_required
 def tracker():
     # Get counts for dashboard
     counts_query = f"""
@@ -143,13 +170,10 @@ def check_isv_name():
 
 
 @app.route('/add_isv', methods=['GET', 'POST'])
+@admin_required
 def add_isv():
     form = ISVForm()
     if request.method == 'POST':
-        print("Form Data:", request.form)
-        print("Form is valid:", form.validate())
-        print("Form Errors:", form.errors)
-
         if form.validate():
             try:
                 # Get the maximum Sr_No
@@ -168,7 +192,7 @@ def add_isv():
                 year = start_date.year
                 quarter_num = (start_date.month - 1) // 3 + 1
                 quarter = f"Q{quarter_num}"
-                year_quarter = f"FY{year}{quarter}"  # Format: FY2025Q1
+                year_quarter = f"FY{year}{quarter}"
 
                 # Construct the INSERT query using standard SQL
                 insert_query = f"""
@@ -212,31 +236,33 @@ def add_isv():
                 # Initialize tasks for the new ISV after successful insert
                 initialize_isv_tasks(next_srno)
 
-                response_data = {'success': True, 'redirect': url_for('current_isvs')}
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify(response_data)
+                    return jsonify({
+                        'success': True,
+                        'message': 'ISV successfully added!',
+                        'redirect': url_for('current_isvs')
+                    })
                 else:
                     flash('ISV successfully added!', 'success')
                     return redirect(url_for('current_isvs'))
 
             except Exception as e:
                 print("Exception:", str(e))
-                error_response = {'success': False, 'error': str(e)}
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify(error_response), 500
+                    return jsonify({
+                        'success': False,
+                        'message': str(e)
+                    }), 500
                 else:
                     flash(f'Error: {str(e)}', 'error')
                     return render_template('add_isv.html', form=form)
         else:
-            # Form validation failed
-            error_response = {
-                'success': False,
-                'error': 'Form validation failed',
-                'errors': form.errors,
-                'form_data': request.form.to_dict()
-            }
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify(error_response), 400
+                return jsonify({
+                    'success': False,
+                    'message': 'Form validation failed',
+                    'errors': form.errors
+                }), 400
             else:
                 return render_template('add_isv.html', form=form)
 
@@ -263,6 +289,7 @@ PREDEFINED_TASKS = [
 
 #Curent ISV page to see the ongoing ISVs
 @app.route('/current_isvs')
+@login_required
 def current_isvs():
     try:
         # Base query that includes actual percentage from ISV_Details_new table
@@ -399,6 +426,7 @@ def update_task_status():
 
 # Delete ISVs from current_isv page
 @app.route('/isv/<int:sr_no>', methods=['DELETE'])
+@admin_required
 def delete_isv(sr_no):
     try:
         # Delete tasks first
@@ -421,6 +449,7 @@ def delete_isv(sr_no):
 
 
 @app.route('/isv/<int:sr_no>/edit', methods=['GET'])
+@admin_required
 def edit_isv(sr_no):
     # Query to get all fields from the table
     query = f"""
@@ -469,6 +498,7 @@ def edit_isv(sr_no):
     return render_template('edit_isv.html', form=form, sr_no=sr_no, isv_name=result_dict['isv_name'])
 
 @app.route('/isv/<int:sr_no>/update', methods=['POST'])
+@admin_required
 def update_isv(sr_no):
     form = ISVForm()
     if form.validate_on_submit():
@@ -529,31 +559,6 @@ def update_isv(sr_no):
     return render_template('edit_isv.html', form=form, sr_no=sr_no)
 
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_email' not in session:
-            flash('Please log in to access this page', 'error')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-
-    return decorated_function
-
-
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_email' not in session:
-            flash('Please log in to access this page', 'error')
-            return redirect(url_for('login'))
-        if session.get('user_role') != 'admin':
-            flash('You do not have permission to access this page', 'error')
-            return abort(403)
-        return f(*args, **kwargs)
-
-    return decorated_function
-
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -561,8 +566,10 @@ def login():
         password = request.form.get('password')
 
         if not email or not password:
-            flash('Please provide both email and password', 'error')
-            return render_template('login.html')
+            return jsonify({
+                'success': False,
+                'message': 'Please provide both email and password'
+            }), 400
 
         # Query user from BigQuery
         query = f"""
@@ -580,8 +587,10 @@ def login():
         results = list(client.query(query, job_config=job_config))
 
         if not results:
-            flash('Invalid email or password', 'error')
-            return render_template('login.html')
+            return jsonify({
+                'success': False,
+                'message': 'Invalid email or password'
+            }), 401
 
         user = results[0]
 
@@ -597,11 +606,16 @@ def login():
             """
             client.query(update_query, job_config=job_config).result()
 
-            flash('Login successful!', 'success')
-            return redirect(url_for('index'))
+            return jsonify({
+                'success': True,
+                'message': 'Login successful!',
+                'redirect': url_for('index')
+            })
 
-        flash('Invalid email or password', 'error')
-        return render_template('login.html')
+        return jsonify({
+            'success': False,
+            'message': 'Invalid email or password'
+        }), 401
 
     return render_template('login.html')
 
@@ -614,31 +628,17 @@ def register():
         confirm_password = request.form.get('confirm_password')
 
         if not email or not password or not confirm_password:
-            flash('Please fill in all fields', 'error')
-            return render_template('register.html')
+            return jsonify({
+                'success': False,
+                'message': 'Please fill in all fields'
+            }), 400
 
         # Validate email format
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-            flash('Please enter a valid email address', 'error')
-            return render_template('register.html')
-
-        # Validate password requirements
-        if len(password) < 8:
-            flash('Password must be at least 8 characters long', 'error')
-            return render_template('register.html')
-        if not re.search(r"[A-Z]", password):
-            flash('Password must contain at least one uppercase letter', 'error')
-            return render_template('register.html')
-        if not re.search(r"\d", password):
-            flash('Password must contain at least one number', 'error')
-            return render_template('register.html')
-        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
-            flash('Password must contain at least one special character', 'error')
-            return render_template('register.html')
-
-        if password != confirm_password:
-            flash('Passwords do not match', 'error')
-            return render_template('register.html')
+            return jsonify({
+                'success': False,
+                'message': 'Please enter a valid email address'
+            }), 400
 
         # Check if user already exists
         check_query = f"""
@@ -655,8 +655,10 @@ def register():
 
         results = list(client.query(check_query, job_config=job_config))
         if results[0].count > 0:
-            flash('Email already registered', 'error')
-            return render_template('register.html')
+            return jsonify({
+                'success': False,
+                'message': 'Email already registered'
+            }), 400
 
         # Create new user with 'user' role
         password_hash = generate_password_hash(password)
@@ -672,9 +674,18 @@ def register():
             ]
         )
 
-        client.query(insert_query, job_config=job_config).result()
-        flash('Registration successful! Please login.', 'success')
-        return redirect(url_for('login'))
+        try:
+            client.query(insert_query, job_config=job_config).result()
+            return jsonify({
+                'success': True,
+                'message': 'Registration successful! Please login.',
+                'redirect': url_for('login')
+            })
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'An error occurred: {str(e)}'
+            }), 500
 
     return render_template('register.html')
 
@@ -687,6 +698,7 @@ def logout():
 
 # Anushree's Code
 @app.route("/isv_history_with_filter", methods=["GET"])
+@login_required
 def isv_history_with_filter():
     selected_quarter = request.args.get("quarter")
     selected_year = request.args.get("year")
@@ -870,6 +882,7 @@ def isv_status(status):
     return render_template('isv_status2.html', status=status, isv_details=isv_details)
 
 @app.route('/list_isvs')
+@login_required
 def list_isvs():
     query = "SELECT Tool_Name FROM `wwbq-treasuredata.GBQ.ISV_Details`"
     isvs = fetch_isvs(query)
@@ -877,6 +890,7 @@ def list_isvs():
 
 
 @app.route('/list_by_domain', methods=['GET'])
+@login_required
 def list_by_domain():
     query = """
     SELECT Domain, ARRAY_AGG(Tool_Name) as Tool_Name 
@@ -891,6 +905,7 @@ def list_by_domain():
 
 # List ISVs by Year and Quarter route
 @app.route("/list_by_year_quarter", methods=["GET", "POST"])
+@login_required
 def list_by_year_quarter():
     # Fetch years and quarters from BigQuery
     query_year_quarter = """
@@ -1290,6 +1305,7 @@ def execute_query(query):
     # return [{"ISV_Name": row.ISV_Name, "Domain": row.Domain} for row in results]
 
 @app.route('/best_isv_by_domain')
+@login_required
 def index_new():
     query = """ SELECT
   a.tool AS Tool_Name,
@@ -1316,6 +1332,7 @@ ORDER BY
 
 
 @app.route('/best_isv_by_yr_qtr')
+@login_required
 def index1():
     query = """ SELECT
   a.tool AS ISV_Name,
@@ -1400,6 +1417,7 @@ def load_isv_data():
         ISV_CACHE.append(isv_dict)
 
 @app.route('/list')
+@login_required
 def list_isv():
     global ISV_CACHE
     load_isv_data()
@@ -1437,6 +1455,7 @@ def list_isv():
     )
 
 @app.route('/details/<int:sr_no>', methods=['GET'])
+@login_required
 def details(sr_no):
     table_ref = f"{client.project}.{dataset_id}.{new_table_id}"
     query = f"SELECT * FROM `{table_ref}` WHERE Sr_No = @sr_no"
@@ -1451,6 +1470,7 @@ def details(sr_no):
 
 
 @app.route('/edit/<int:sr_no>', methods=['GET', 'POST'])
+@admin_required
 def edit(sr_no):
     domain_options = get_domains()
     table_ref = f"{client.project}.{dataset_id}.{new_table_id}"
@@ -1471,78 +1491,86 @@ def edit(sr_no):
 
         if not details:
             flash("ISV not found.", "error")
-            return redirect(url_for('list_isv'))
+            return redirect(url_for('list'))
 
         return render_template('edit.html', details=details, domain_options=domain_options)
 
     elif request.method == 'POST':
-        # Get the form data
-        data = request.form.to_dict()
+        try:
+            # Get the form data
+            data = request.form.to_dict()
 
-        # Handle new domain if specified
-        if data.get('New_Domain'):
-            new_domain = data.get('New_Domain')
-            data['Domain'] = new_domain
-        if 'New_Domain' in data:
-            del data['New_Domain']
+            # Handle new domain if specified
+            if data.get('New_Domain'):
+                new_domain = data.get('New_Domain')
+                data['Domain'] = new_domain
+            if 'New_Domain' in data:
+                del data['New_Domain']
 
-        # Calculate YearQuarter based on ISV_Start_Date
-        if data.get('ISV_Start_Date'):
-            date_obj = datetime.strptime(data['ISV_Start_Date'], '%Y-%m-%d')
-            year = date_obj.year
-            month = date_obj.month
-            quarter = f"Q{((month - 1) // 3) + 1}"
-            data['Year'] = year
-            data['Quarter'] = quarter
-            data['YearQuarter'] = f"FY{year}{quarter}"
+            # Calculate YearQuarter based on ISV_Start_Date
+            if data.get('ISV_Start_Date'):
+                date_obj = datetime.strptime(data['ISV_Start_Date'], '%Y-%m-%d')
+                year = date_obj.year
+                month = date_obj.month
+                quarter = f"Q{((month - 1) // 3) + 1}"
+                data['Year'] = year
+                data['Quarter'] = quarter
+                data['YearQuarter'] = f"FY{year}{quarter}"
 
             # Construct the update query dynamically
             query_parameters = []
-            set_clauses = []  # Initialize set_clauses list
+            set_clauses = []
+
             for key, value in data.items():
-                if key in ["Year"]:  # INT64 fields
+                if not value:  # Skip empty values
+                    continue
+
+                if key in ["Year"]:
                     set_clauses.append(f"{key} = @{key}")
                     query_parameters.append(bigquery.ScalarQueryParameter(key, "INT64", int(value)))
-                elif key in ["Percentage"]:  # NUMERIC fields
+                elif key in ["Percentage"]:
                     set_clauses.append(f"{key} = @{key}")
                     query_parameters.append(bigquery.ScalarQueryParameter(key, "NUMERIC", float(value)))
-                elif key in ["ISV_Start_Date"]:  # Always include ISV_Start_Date if present
-                    set_clauses.append(f"{key} = @{key}")
-                    query_parameters.append(bigquery.ScalarQueryParameter(key, "DATE", value))
-                elif key in ["ISV_End_Date"]:  # Include ISV_End_Date only if it's valid
-                    if value and value.strip():  # Check if value exists and is not just whitespace
+                elif key in ["ISV_Start_Date", "ISV_End_Date"]:
+                    if value.strip():  # Only process non-empty date strings
                         try:
-                            # Try to parse the date to ensure it's valid
+                            # Validate date format
                             datetime.strptime(value, '%Y-%m-%d')
                             set_clauses.append(f"{key} = @{key}")
                             query_parameters.append(bigquery.ScalarQueryParameter(key, "DATE", value))
                         except ValueError:
-                            # If date parsing fails, don't include in update
                             continue
-                else:  # Default to STRING fields
+                else:
                     set_clauses.append(f"{key} = @{key}")
                     query_parameters.append(bigquery.ScalarQueryParameter(key, "STRING", value))
-            # Add Sr_No parameter outside the loop
-            query_parameters.append(bigquery.ScalarQueryParameter("Sr_No", "INTEGER", sr_no))
-            # Construct the query string
-            update_query = f"""
-                  UPDATE `{table_ref}`
-                  SET {', '.join(set_clauses)}
-                  WHERE Sr_No = @Sr_No
-              """
 
-        try:
-            # Execute the update query
-            job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
-            client.query(update_query, job_config=job_config).result()
-            flash("Details updated successfully!", "success")
-            return redirect(url_for('details', Sr_No=sr_no))
+            # Add Sr_No parameter
+            query_parameters.append(bigquery.ScalarQueryParameter("Sr_No", "INT64", sr_no))
+
+            if set_clauses:  # Only proceed if there are fields to update
+                update_query = f"""
+                    UPDATE `{table_ref}`
+                    SET {', '.join(set_clauses)}
+                    WHERE Sr_No = @Sr_No
+                """
+
+                # Execute the update query
+                job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
+                client.query(update_query, job_config=job_config).result()
+
+                flash("Details updated successfully!", "success")
+                return redirect(url_for('details', sr_no=sr_no))  # Note: changed Sr_No to sr_no
+            else:
+                flash("No valid fields to update", "warning")
+                return render_template('edit.html', details=data, domain_options=domain_options)
+
         except Exception as e:
             flash(f"Error updating ISV: {str(e)}", "error")
             return render_template('edit.html', details=data, domain_options=domain_options)
 
 
 @app.route('/delete_isv/<int:sr_no>', methods=['DELETE'])
+@admin_required
 def delete_tool(sr_no):
     """Delete an ISV and its related tasks from BigQuery."""
     table_ref = f"{client.project}.{dataset_id}.{new_table_id}"

@@ -97,6 +97,7 @@
                     </div>
 
                     <!-- Improved Action Buttons -->
+                    {% if session.get('user_role') == 'admin' %}
                     <div class="flex justify-end space-x-4">
                         <a href="{{ url_for('edit_isv', sr_no=isv['Sr_No']) }}"
                            class="inline-flex items-center px-6 py-2 rounded-lg shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
@@ -106,6 +107,8 @@
                             Edit
                         </a>
                         <button onclick="confirmDelete({{ isv['Sr_No'] }})"
+                                data-delete-btn
+                                data-isv-id="{{ isv['Sr_No'] }}"
                                 class="inline-flex items-center px-6 py-2 rounded-lg shadow-sm text-sm font-semibold text-white bg-red-600 hover:bg-red-700 focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -113,6 +116,7 @@
                             Delete
                         </button>
                     </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -131,19 +135,48 @@
                                         <p class="text-sm text-gray-600 mt-1">Updated: {{ task['updated_at'].strftime('%Y-%m-%d') }}</p>
                                     </div>
                                 </div>
-                                <select onchange="updateTaskStatus({{ isv['Sr_No'] }}, '{{ task['task_name'] }}', this.value)"
-                                        class="w-full rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500 font-medium
+                                {% if session.get('user_role') == 'admin' %}
+                                    <!-- Admin View: Dropdown for status change -->
+                                    <select onchange="performAdminTaskUpdate({{ isv['Sr_No'] }}, '{{ task['task_name'] }}', this.value)"
+                                            data-task-status
+                                            data-isv-id="{{ isv['Sr_No'] }}"
+                                            data-task-name="{{ task['task_name'] }}"
+                                            class="w-full rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500 font-medium
+                                            {% if task['status'] == 'Completed' %}
+                                                bg-green-50 text-green-700
+                                            {% elif task['status'] == 'in progress' %}
+                                                bg-yellow-50 text-yellow-700
+                                            {% else %}
+                                                bg-gray-50 text-gray-700
+                                            {% endif %}">
+                                        <option value="not started" {% if task['status'] == 'not started' %}selected{% endif %}>Not Started</option>
+                                        <option value="in progress" {% if task['status'] == 'in progress' %}selected{% endif %}>In Progress</option>
+                                        <option value="Completed" {% if task['status'] == 'Completed' %}selected{% endif %}>Completed</option>
+                                    </select>
+                                {% else %}
+                                    <!-- Non-Admin View: Status badge -->
+                                    <div class="w-full px-4 py-2 rounded-lg font-medium text-sm
                                         {% if task['status'] == 'Completed' %}
-                                            bg-green-50 text-green-700
+                                            bg-green-50 text-green-700 border border-green-200
                                         {% elif task['status'] == 'in progress' %}
-                                            bg-yellow-50 text-yellow-700
+                                            bg-yellow-50 text-yellow-700 border border-yellow-200
                                         {% else %}
-                                            bg-gray-50 text-gray-700
+                                            bg-gray-50 text-gray-700 border border-gray-200
                                         {% endif %}">
-                                    <option value="not started" {% if task['status'] == 'not started' %}selected{% endif %}>Not Started</option>
-                                    <option value="in progress" {% if task['status'] == 'in progress' %}selected{% endif %}>In Progress</option>
-                                    <option value="Completed" {% if task['status'] == 'Completed' %}selected{% endif %}>Completed</option>
-                                </select>
+                                        <div class="flex items-center">
+                                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                {% if task['status'] == 'Completed' %}
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                {% elif task['status'] == 'in progress' %}
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                {% else %}
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                {% endif %}
+                                            </svg>
+                                            {{ task['status']|title }}
+                                        </div>
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}
@@ -183,6 +216,7 @@
 </div>
 
 <script>
+// Modal and deletion handling
 let deletingISVId = null;
 const deleteModal = document.getElementById('deleteModal');
 
@@ -202,51 +236,6 @@ document.getElementById('deleteConfirm').addEventListener('click', () => {
     }
 });
 
-async function deleteISV(srNo) {
-    try {
-        const response = await fetch(`/isv/${srNo}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        if (response.ok) {
-            window.location.reload();
-        } else {
-            alert('Failed to delete partnership');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('An error occurred while deleting the partnership');
-    } finally {
-        deleteModal.classList.add('hidden');
-    }
-}
-
-async function updateTaskStatus(srNo, taskName, status) {
-    try {
-        const response = await fetch('/task/status', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                sr_no: srNo,
-                task_name: taskName,
-                status: status
-            })
-        });
-        if (response.ok) {
-            window.location.reload();
-        } else {
-            alert('Failed to update task status');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('An error occurred while updating the task status');
-    }
-}
-
 // Close modal when clicking outside
 deleteModal.addEventListener('click', (e) => {
     if (e.target === deleteModal) {
@@ -263,7 +252,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Add loading states for better UX
+// Loading state management
 function showLoadingState(element) {
     const originalContent = element.innerHTML;
     element.disabled = true;
@@ -282,7 +271,7 @@ function hideLoadingState(element, originalContent) {
     element.innerHTML = originalContent;
 }
 
-// Enhanced delete function with loading state
+// Core functionality for ISV deletion
 async function deleteISV(srNo) {
     const deleteButton = document.getElementById('deleteConfirm');
     const originalContent = showLoadingState(deleteButton);
@@ -295,31 +284,34 @@ async function deleteISV(srNo) {
             }
         });
 
-        if (response.ok) {
-            // Add a smooth fade-out effect before reload
-            const isvElement = document.querySelector(`[data-isv-id="${srNo}"]`);
-            if (isvElement) {
-                isvElement.style.transition = 'opacity 0.3s ease-out';
-                isvElement.style.opacity = '0';
-                setTimeout(() => window.location.reload(), 300);
-            } else {
-                window.location.reload();
-            }
-        } else {
+        if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to delete partnership');
+            throw new Error(errorData.message || 'Failed to delete ISV');
+        }
+
+        // Handle successful deletion with animation
+        const isvCard = document.querySelector(`[data-isv-id="${srNo}"]`).closest('.bg-white');
+        if (isvCard) {
+            isvCard.style.transition = 'opacity 0.3s ease-out';
+            isvCard.style.opacity = '0';
+            setTimeout(() => {
+                isvCard.remove();
+                showToast('Partnership deleted successfully', 'success');
+            }, 300);
+        } else {
+            location.reload();
         }
     } catch (error) {
         console.error('Error:', error);
-        alert(error.message || 'An error occurred while deleting the partnership');
+        showToast(error.message || 'An error occurred while deleting the partnership', 'error');
     } finally {
         hideLoadingState(deleteButton, originalContent);
         deleteModal.classList.add('hidden');
     }
 }
 
-// Enhanced task status update with loading state
-async function updateTaskStatus(srNo, taskName, status) {
+// Task status management
+async function updateTaskStatus(srNo, taskName, newStatus) {
     const selectElement = event.target;
     const originalValue = selectElement.value;
     selectElement.disabled = true;
@@ -334,21 +326,23 @@ async function updateTaskStatus(srNo, taskName, status) {
             body: JSON.stringify({
                 sr_no: srNo,
                 task_name: taskName,
-                status: status
+                status: newStatus
             })
         });
 
-        if (response.ok) {
-            // Add a subtle highlight effect before reload
-            selectElement.closest('.bg-gray-50').classList.add('bg-blue-50');
-            setTimeout(() => window.location.reload(), 300);
-        } else {
+        if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Failed to update task status');
         }
+
+        // Highlight effect before completing update
+        selectElement.closest('.bg-gray-50').classList.add('bg-blue-50');
+        setTimeout(() => {
+            location.reload();
+        }, 300);
     } catch (error) {
         console.error('Error:', error);
-        alert(error.message || 'An error occurred while updating the task status');
+        showToast(error.message || 'An error occurred while updating the task status', 'error');
         selectElement.value = originalValue;
     } finally {
         selectElement.disabled = false;
@@ -356,8 +350,52 @@ async function updateTaskStatus(srNo, taskName, status) {
     }
 }
 
-// Auto-hide flash messages after 5 seconds
-document.addEventListener('DOMContentLoaded', () => {
+// Admin-specific task update function
+async function performAdminTaskUpdate(srNo, taskName, newStatus) {
+    try {
+        const response = await fetch('/task/status', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                sr_no: srNo,
+                task_name: taskName,
+                status: newStatus
+            })
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || 'Failed to update task status');
+        }
+
+        const result = await response.json();
+        showToast(result.message, 'success');
+
+        // Reload after successful update
+        setTimeout(() => {
+            location.reload();
+        }, 500);
+    } catch (error) {
+        console.error('Error:', error);
+        showToast(error.message || 'Failed to update task status', 'error');
+    }
+}
+
+// Page initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize task status handlers
+    const taskStatusSelects = document.querySelectorAll('[data-task-status]');
+    taskStatusSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const srNo = this.dataset.isvId;
+            const taskName = this.dataset.taskName;
+            performAdminTaskUpdate(srNo, taskName, this.value);
+        });
+    });
+
+    // Auto-hide flash messages
     const flashMessages = document.querySelectorAll('.flash-message');
     flashMessages.forEach(message => {
         setTimeout(() => {
