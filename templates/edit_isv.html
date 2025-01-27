@@ -131,9 +131,9 @@
                     <div>
                         <label for="{{ form.end_date.id }}" class="block text-sm font-medium text-gray-700">
                             {{ form.end_date.label }}
-                            <span class="text-red-500">*</span>
                         </label>
                         {{ form.end_date(class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-200", type="date") }}
+                        <p class="mt-1 text-sm text-gray-500">Optional - Leave blank if not yet determined</p>
                     </div>
 
                     <!-- POC -->
@@ -343,11 +343,6 @@ function showToast(message, type) {
 
 // Initialize form with current progress value
 document.addEventListener('DOMContentLoaded', function() {
-    const progressInput = document.querySelector('input[type="range"]');
-    if (progressInput) {
-        updateProgressValue(progressInput.value);
-    }
-
     // Initialize description counter
     const description = document.getElementById('{{ form.description.id }}');
     if (description) {

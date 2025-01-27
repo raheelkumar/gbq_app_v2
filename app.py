@@ -327,13 +327,14 @@ def current_isvs():
             LEFT JOIN TaskStats ts ON i.Sr_No = ts.Sr_No
             LEFT JOIN RecentCompleted rc ON i.Sr_No = rc.Sr_No
             WHERE 
-                i.Status IN ('not started', 'in progress')
+                i.Status IN ('not started', 'in progress', 'on hold')
                 OR (i.Status = 'Completed' AND rc.completion_rank <= 3)
             ORDER BY 
                 CASE 
                     WHEN i.Status = 'in progress' THEN 1
                     WHEN i.Status = 'not started' THEN 2
-                    WHEN i.Status = 'Completed' THEN 3
+                    WHEN i.Status = 'on hold' THEN 3
+                    WHEN i.Status = 'Completed' THEN 4
                 END,
                 i.ISV_Start_Date DESC
         )
